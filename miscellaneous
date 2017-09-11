@@ -1,0 +1,99 @@
+//---------------------------------------------
+#PORCION_1
+Interrupcion del timer usando ademas el sensor de luz.
+
+#include <ti/devices/msp432p4xx/inc/msp.h>
+#include <ti/devices/msp432p4xx/driverlib/driverlib.h>
+#include <ti/grlib/grlib.h>
+#include <HAL_I2C.h>
+#include <HAL_OPT3001.h>
+
+/* Variable for storing lux value returned from OPT3001 */
+float lux;
+int luces = 3;
+
+/*
+ * Main function
+ */
+int main(void)
+{
+    /* Halting WDT and disabling master interrupts */
+    WDTCTL = WDTPW | WDTHOLD;                    /* Stop watchdog timer */
+
+    /* Initializes Clock System */
+    MAP_CS_setDCOCenteredFrequency(CS_DCO_FREQUENCY_48);
+
+    /* Initialize I2C communication */
+    Init_I2C_GPIO();
+    I2C_init();
+    /* Initialize OPT3001 digital ambient light sensor */
+    OPT3001_init();
+
+    /* Port 2 Out */
+    P2->DIR = BIT0|BIT1|BIT2;
+
+    /* Configuration Timer32*/
+    TIMER32_1->LOAD = 0x02DC6C00; //~1ms ---> a 48Mhz
+    TIMER32_1->CONTROL = TIMER32_CONTROL_SIZE | TIMER32_CONTROL_PRESCALE_0 | TIMER32_CONTROL_MODE | TIMER32_CONTROL_IE | TIMER32_CONTROL_ENABLE;
+    NVIC_SetPriority(T32_INT1_IRQn,1);
+    NVIC_EnableIRQ(T32_INT1_IRQn);
+
+    /*Loop waiting for interrupts*/
+    while(1)
+    {
+    }
+}
+
+void encender(int luces)
+{
+    /* Obtain lux value from OPT3001 */
+    lux = OPT3001_getLux();
+    if(lux < 15){
+        P2->OUT = BIT0|BIT1|BIT2;
+    }else{
+        P2->OUT = 0;
+    }
+}
+
+extern "C"
+{
+    void T32_INT1_IRQHandler(void)
+    {
+        __disable_irq();
+        TIMER32_1->INTCLR = 0U;
+        encender(luces);
+        __enable_irq();
+        return;
+    }
+}
+
+//---------------------------------------------
+
+Funcioncillas que seguro usamos.
+///////////
+bool isnight(){
+    __delay_cycles(100000);
+    lux = OPT3001_getLux();
+    if(lux < 2000)
+        return false;
+    else
+        return true;
+}
+
+
+void initialize(int luces)
+{
+bool varisnight = isnight();
+
+    if ((luces == 3) & (varisnight)){
+        P2->DIR = BIT0|BIT1|BIT2;
+        P2->OUT = BIT0|BIT1|BIT2;
+    } else if (luces == 2){
+        P2->DIR = BIT0|BIT1;
+        P2->OUT = BIT0|BIT1;
+    } else {
+        P2->DIR = BIT0;
+        P2->OUT = BIT0;
+    }
+}
+
