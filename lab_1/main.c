@@ -1,4 +1,3 @@
-//Un comentario
 /* --COPYRIGHT--,BSD
  * Copyright (c) 2017, Texas Instruments Incorporated
  * All rights reserved.
@@ -48,7 +47,11 @@
  * Author: 
 *******************************************************************************/
 /* DriverLib Includes */
+#include <ti/devices/msp432p4xx/inc/msp.h>
 #include <ti/devices/msp432p4xx/driverlib/driverlib.h>
+#include <ti/grlib/grlib.h>
+#include <HAL_I2C.h>
+#include <HAL_OPT3001.h>
 
 /* Standard Includes */
 #include <stdint.h>
