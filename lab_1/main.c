@@ -67,3 +67,23 @@ int main(void)
         
     }
 }
+
+
+void initialize(int luces)
+{
+	int i;
+	for (i=0; i<3; i++){
+		switch(luces) {
+		    case 3:  P2->OUT = BIT0|BIT1|BIT2;
+		    case 2:  P2->OUT = BIT0|BIT1;
+		    default: P2->OUT = BIT0;
+		}
+	    Sleep(250);
+	    P2->OUT &= 0xF8;
+	    Sleep(250);
+	}
+}
+
+
+
+
