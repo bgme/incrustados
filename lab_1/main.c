@@ -52,7 +52,9 @@
 #include <ti/grlib/grlib.h>
 #include <HAL_I2C.h>
 #include <HAL_OPT3001.h>
-#include <windows.h> //For using sleep function, I think.
+#ifdef _WIN32
+#include <Windows.h> //For using sleep function, I think.
+#endif
 
 /* Standard Includes */
 #include <stdint.h>
