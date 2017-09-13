@@ -47,15 +47,14 @@
  * Author: 
 *******************************************************************************/
 /* DriverLib Includes */
+#ifdef _WIN32
+#include <Windows.h> //For using sleep function, I think.
+#endif
 #include <ti/devices/msp432p4xx/inc/msp.h>
 #include <ti/devices/msp432p4xx/driverlib/driverlib.h>
 #include <ti/grlib/grlib.h>
 #include <HAL_I2C.h>
 #include <HAL_OPT3001.h>
-#ifdef _WIN32
-#include <Windows.h> //For using sleep function, I think.
-#endif
-
 /* Standard Includes */
 #include <stdint.h>
 #include <stdbool.h>
@@ -72,11 +71,11 @@ int main(void)
 }
 
 
-void initialize(int luces)
+void initialize(int lights)
 {
 	int i;
 	for (i=0; i<3; i++){
-		switch(luces) {
+		switch(lights) {
 		    case 3:  P2->OUT = BIT0|BIT1|BIT2;
 		    case 2:  P2->OUT = BIT0|BIT1;
 		    default: P2->OUT = BIT0;
@@ -87,6 +86,16 @@ void initialize(int luces)
 	}
 }
 
-
-
+void turn_on(int lights)
+{
+    /* Obtain lux value from OPT3001 */
+    lux = OPT3001_getLux();
+    if(lux < 15){
+		switch(lights) {
+		    case 3:  P2->OUT = BIT0|BIT1|BIT2;
+		    case 2:  P2->OUT = BIT0|BIT1;
+		    default: P2->OUT = BIT0;
+		}
+    }
+}
 
