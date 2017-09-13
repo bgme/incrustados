@@ -61,8 +61,20 @@
 
 int main(void)
 {
-    /* Stop Watchdog  */
-    MAP_WDT_A_holdTimer();
+    /* Halting WDT and disabling master interrupts */
+    WDTCTL = WDTPW | WDTHOLD;                    /* Stop watchdog timer */
+
+    /* Initializes Clock System */
+    MAP_CS_setDCOCenteredFrequency(CS_DCO_FREQUENCY_48);
+
+    /* Initialize I2C communication */
+    Init_I2C_GPIO();
+    I2C_init();
+    /* Initialize OPT3001 digital ambient light sensor */
+    OPT3001_init();
+
+    /* Port 2 Out */
+    P2->DIR = BIT0|BIT1|BIT2;
 
     while(1)
     {
@@ -103,5 +115,8 @@ void turn_on_off(int lights, int on_off)
 			}
 	}
 }
+
+
+
 
 
