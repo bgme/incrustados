@@ -44,7 +44,7 @@
  *            |                  |
  *            |                  |
  *            |                  |
- * Author: 
+ * Author: Badilla Esteban, Mora Berni
 *******************************************************************************/
 /* DriverLib Includes */
 #include <ti/devices/msp432p4xx/inc/msp.h>
@@ -134,9 +134,10 @@ void turn_on_off(int lights, int on_off)
 void set_config_outport(int lights)
 {
 	switch(lights) {
-		case 3:  P2->DIR = BIT0|BIT1|BIT2;
-		case 2:  P2->DIR = BIT0|BIT1;
-		default: P2->DIR = BIT0;
+		case 1:  P2->OUT = BIT0;
+		case 2:  P2->OUT = BIT0|BIT1;
+		case 3:  P2->OUT = BIT0|BIT1|BIT2;
+		default: P2->OUT = BIT0;
 	}
 }
 
