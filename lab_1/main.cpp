@@ -67,6 +67,7 @@ void initialize(int lights);
 void turn_on_off(int lights, int on_off);
 void set_config_outport(int lights);
 
+uint32_t ADC14Result = 0U;
 int main(void)
 {
     /* Halting WDT and disabling master interrupts */
@@ -85,7 +86,7 @@ int main(void)
     set_config_outport(lights);
 
     /* Ready to use */
-    initialize(int lights)
+    initialize(lights);
 
     while(1)
     {
@@ -137,5 +138,28 @@ void set_config_outport(int lights)
 		case 3:  P2->OUT = BIT0|BIT1|BIT2;
 		default: P2->OUT = BIT0;
 	}
+}
+
+
+extern "C"
+{
+    void T32_INT1_IRQHandler(void)
+    {
+        __disable_irq();
+        TIMER32_1->INTCLR = 0U;
+        P1->OUT ^= BIT0;
+        ADC14->CTL0 = ADC14->CTL0 | ADC14_CTL0_SC; // Start
+        __enable_irq();
+        return;
+    }
+
+    void ADC14_IRQHandler(void)
+    {
+        __disable_irq();
+        ADC14Result = ADC14->MEM[0];
+        ADC14->CLRIFGR0 = ADC14_CLRIFGR0_CLRIFG0;
+        __enable_irq();
+        return;
+    }
 }
 
