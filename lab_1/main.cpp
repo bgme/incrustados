@@ -59,11 +59,8 @@
 #include <Windows.h> //For using sleep function, I think.
 #endif
 
-
-int lux 	= 0;
 int lights 	= 0;
 int on_off 	= 0;
-
 
 //Headers
 void initialize(int lights);
@@ -71,9 +68,7 @@ void turn_on_off(int lights, int on_off);
 void set_config_outport(int lights);
 void adc14_config();
 
-
 uint32_t ADC14Result = 0U;
-
 int main(void)
 {
     /* Halting WDT and disabling master interrupts */
@@ -91,6 +86,9 @@ int main(void)
     /* Port 2 Out */
     set_config_outport(lights);
 
+    /* Ready to use */
+    initialize(lights);
+
     adc14_config();
 
     while(1)
@@ -99,11 +97,10 @@ int main(void)
     }
 }
 
-
 void initialize(int lights)
 {
 	int i;
-	for (i=0; i<3; i++){
+	for (i=0; i<3; i++){ // To blink three times
 		switch(lights) {
 		    case 1:  P2->OUT = BIT0;
             case 2:  P2->OUT = BIT0|BIT1;
@@ -111,7 +108,7 @@ void initialize(int lights)
 		    default: P2->OUT = BIT0;
 		}
 	    //Sleep(250);
-	    P2->OUT &= 0xF8;
+	    P2->OUT &= 0xF8; //Set 0 all lights
 	    //sleep(250);
 	}
 }
