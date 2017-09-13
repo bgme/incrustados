@@ -86,16 +86,22 @@ void initialize(int lights)
 	}
 }
 
-void turn_on(int lights)
+void turn_on_off(int lights, int on_off)
 {
-    /* Obtain lux value from OPT3001 */
-    lux = OPT3001_getLux();
-    if(lux < 15){
-		switch(lights) {
-		    case 3:  P2->OUT = BIT0|BIT1|BIT2;
-		    case 2:  P2->OUT = BIT0|BIT1;
-		    default: P2->OUT = BIT0;
-		}
-    }
+	switch(on_off) {
+		case 0:
+			P2->OUT &= 0xF8;
+		default:
+			/* Obtain lux value from OPT3001 */
+			lux = OPT3001_getLux();
+			if(lux < 15){
+				switch(lights) {
+					case 3:  P2->OUT = BIT0|BIT1|BIT2;
+		    		case 2:  P2->OUT = BIT0|BIT1;
+		    		default: P2->OUT = BIT0;
+				}
+			}
+	}
 }
+
 
