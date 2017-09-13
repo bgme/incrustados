@@ -52,6 +52,7 @@
 #include <ti/grlib/grlib.h>
 #include <HAL_I2C.h>
 #include <HAL_OPT3001.h>
+#include <windows.h> //For using sleep function, I think.
 
 /* Standard Includes */
 #include <stdint.h>
@@ -78,9 +79,9 @@ void initialize(int luces)
 		    case 2:  P2->OUT = BIT0|BIT1;
 		    default: P2->OUT = BIT0;
 		}
-	    Sleep(250);
+	    sleep(250);
 	    P2->OUT &= 0xF8;
-	    Sleep(250);
+	    sleep(250);
 	}
 }
 
