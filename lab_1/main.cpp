@@ -69,6 +69,7 @@ int on_off 	= 0;
 void initialize(int lights);
 void turn_on_off(int lights, int on_off);
 void set_config_outport(int lights);
+void adc14_config();
 
 
 uint32_t ADC14Result = 0U;
@@ -89,6 +90,8 @@ int main(void)
 
     /* Port 2 Out */
     set_config_outport(lights);
+
+    adc14_config();
 
     while(1)
     {
