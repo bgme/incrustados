@@ -55,11 +55,10 @@
 /* Standard Includes */
 #include <stdint.h>
 #include <stdbool.h>
-#ifdef _WIN32
-#include <Windows.h> //For using sleep function, I think.
-#endif
+//#include <boost/thread/thread.hpp>
 
-int lights 	= 0;
+
+int lights 	= 1;
 int on_off 	= 0;
 
 //Headers
@@ -102,14 +101,14 @@ void initialize(int lights)
 	int i;
 	for (i=0; i<3; i++){ // To blink three times
 		switch(lights) {
-		    case 1:  P2->OUT = BIT0;
-            case 2:  P2->OUT = BIT0|BIT1;
-		    case 3:  P2->OUT = BIT0|BIT1|BIT2;
+		    case 1:  P2->OUT = BIT0; break;
+            case 2:  P2->OUT = BIT0|BIT1; break;
+		    case 3:  P2->OUT = BIT0|BIT1|BIT2; break;
 		    default: P2->OUT = BIT0;
 		}
-	    //Sleep(250);
-	    P2->OUT &= 0xF8; //Set 0 all lights
-	    //sleep(250);
+//		boost::this_thread::sleep( boost::posix_time::milliseconds(600) );
+//	     P2->OUT &= 0xF8; //Set 0 all lights
+//	    boost::this_thread::sleep( boost::posix_time::milliseconds(600) );
 	}
 }
 
@@ -124,9 +123,9 @@ void turn_on_off(int lights, int on_off)
 			lux = OPT3001_getLux();
 			if(lux < 15){
 				switch(lights) {
-				case 1:  P2->OUT = BIT0;
-				case 2:  P2->OUT = BIT0|BIT1;
-				case 3:  P2->OUT = BIT0|BIT1|BIT2;
+				case 1:  P2->OUT = BIT0; break;
+				case 2:  P2->OUT = BIT0|BIT1; break;
+				case 3:  P2->OUT = BIT0|BIT1|BIT2; break;
 				default: P2->OUT = BIT0;
 				}
 			}
