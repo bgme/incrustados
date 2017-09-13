@@ -47,9 +47,6 @@
  * Author: 
 *******************************************************************************/
 /* DriverLib Includes */
-#ifdef _WIN32
-#include <Windows.h> //For using sleep function, I think.
-#endif
 #include <ti/devices/msp432p4xx/inc/msp.h>
 #include <ti/devices/msp432p4xx/driverlib/driverlib.h>
 #include <ti/grlib/grlib.h>
@@ -58,6 +55,21 @@
 /* Standard Includes */
 #include <stdint.h>
 #include <stdbool.h>
+#ifdef _WIN32
+#include <Windows.h> //For using sleep function, I think.
+#endif
+
+
+int lux 	= 0;
+int lights 	= 0;
+int on_off 	= 0;
+
+
+//Headers
+void initialize(int lights);
+void turn_on_off(int lights, int on_off);
+void set_config_outport(int lights);
+
 
 int main(void)
 {
@@ -74,7 +86,7 @@ int main(void)
     OPT3001_init();
 
     /* Port 2 Out */
-    P2->DIR = BIT0|BIT1|BIT2;
+    set_config_outport(lights);
 
     while(1)
     {
@@ -92,9 +104,9 @@ void initialize(int lights)
 		    case 2:  P2->OUT = BIT0|BIT1;
 		    default: P2->OUT = BIT0;
 		}
-	    sleep(250);
+	    //Sleep(250);
 	    P2->OUT &= 0xF8;
-	    sleep(250);
+	    //Sleep(250);
 	}
 }
 
@@ -116,7 +128,12 @@ void turn_on_off(int lights, int on_off)
 	}
 }
 
-
-
-
+void set_config_outport(int lights)
+{
+	switch(lights) {
+		case 3:  P2->DIR = BIT0|BIT1|BIT2;
+		case 2:  P2->DIR = BIT0|BIT1;
+		default: P2->DIR = BIT0;
+	}
+}
 
