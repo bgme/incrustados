@@ -55,26 +55,29 @@
 /* Standard Includes */
 #include <stdint.h>
 #include <stdbool.h>
-//#include <boost/thread/thread.hpp>
 
+#define ON true
 
-int lights 	= 2;
-int on_off 	= 0;
+uint8_t lights 	= 4; /* 1:red 2:green 4:blue */
+bool on_off 	= 0; /* true=ON */
+uint32_t blink_counter = 0U;
+uint32_t ADC14Result = 0U;
+bool init = true;
 
 //Headers
 void initialize();
-void turn_on_off(int lights, int on_off);
-void set_config_outport(int lights);
+void turn_on_off(uint8_t lights, bool on_off);
+void set_config_outport(uint8_t lights);
 void adc14_config();
+void T32_INIT2_CONFIG(bool init);
 
-uint32_t ADC14Result = 0U;
 int main(void)
 {
     /* Halting WDT and disabling master interrupts */
     WDTCTL = WDTPW | WDTHOLD;                    /* Stop watchdog timer */
 
     /* Initializes Clock System */
-    MAP_CS_setDCOCenteredFrequency(CS_DCO_FREQUENCY_48);
+    MAP_CS_setDCOCenteredFrequency(CS_DCO_FREQUENCY_3);
 
     /* Initialize I2C communication */
     Init_I2C_GPIO();
@@ -83,11 +86,15 @@ int main(void)
     OPT3001_init();
 
     /* Ready to use */
-    initialize();
+    initialize(); /* Blink 3 times at the beginning. SRS-002 */
 
     set_config_outport(lights);
 
-    adc14_config();
+    turn_on_off(lights, ON); /* Check at the beginning the intensity of light. SRS-003 */
+
+    T32_INIT2_CONFIG(init);
+
+//    adc14_config();
 
     while(1)
     {
@@ -95,45 +102,48 @@ int main(void)
     }
 }
 
+
+void T32_INIT2_CONFIG(bool init){
+	if(init){
+		TIMER32_2->LOAD = 0x0016E360; /* ~500ms ---> a 3Mhz */
+	}else{
+		TIMER32_2->LOAD = 0x000B71B0; /* ~250ms ---> a 3Mhz */
+	}
+	TIMER32_2->CONTROL = TIMER32_CONTROL_SIZE | TIMER32_CONTROL_PRESCALE_0 | TIMER32_CONTROL_MODE | TIMER32_CONTROL_IE | TIMER32_CONTROL_ENABLE;
+	NVIC_SetPriority(T32_INT2_IRQn, 1);
+	NVIC_EnableIRQ(T32_INT2_IRQn);
+}
+
 void initialize()
 {
+	init = true;
 	P2->DIR |= BIT0|BIT1|BIT2;
-	for (int i=0; i<3; i++){ // To blink three times
-		P2->OUT |= BIT0|BIT1|BIT2;
-		for(int i=0; i<500000; i++){}
-		P2->OUT &= 0xF8; //Set 0 all lights
-		for(int i=0; i<500000; i++){}
+	P2->OUT &= 0xF8;
+
+	T32_INIT2_CONFIG(init);
+	while (blink_counter < 6) {
+		/* To blink three times */
 	}
+	TIMER32_2->CONTROL = 0; /* Disable the timer for saving energy */
+	NVIC_DisableIRQ(T32_INT2_IRQn);
+	init = false;
 }
 
-void turn_on_off(int lights, int on_off)
-{
-    unsigned long int lux = 0;
-	switch(on_off) {
-		case 0:
-			P2->OUT &= 0xF8;
-		default:
-			/* Obtain lux value from OPT3001 */
-			lux = OPT3001_getLux();
-			if(lux < 15){
-				switch(lights) {
-				case 1:  P2->OUT = BIT0; break;
-				case 2:  P2->OUT = BIT1; break;
-				case 3:  P2->OUT = BIT2; break;
-				default: P2->OUT = BIT0;
-				}
-			}
-	}
+
+void turn_on_off(uint8_t lights, bool on_off) {
+	unsigned long int lux = 0;
+	if (on_off) {
+		/* Obtain lux value from OPT3001 */
+		lux = OPT3001_getLux();
+		if (lux < 15)
+			P2->OUT |= lights;
+	} else P2->OUT &= 0xF8;
+
 }
 
-void set_config_outport(int lights)
+void set_config_outport(uint8_t lights)
 {
-	switch(lights) {
-		case 1:  P2->DIR = BIT0; break;
-		case 2:  P2->DIR = BIT1; break;
-		case 3:  P2->DIR = BIT2; break;
-		default: P2->DIR = BIT0;
-	}
+	P2->DIR |= lights;
 }
 
 void adc14_config(){
@@ -161,14 +171,21 @@ void adc14_config(){
 }
 
 
+void T32_INT1_Config(void){
+	TIMER32_1->LOAD = 0x055D4A80; /* ~30s ---> a 3Mhz */
+	TIMER32_1->CONTROL = TIMER32_CONTROL_SIZE | TIMER32_CONTROL_PRESCALE_0 | TIMER32_CONTROL_MODE | TIMER32_CONTROL_IE | TIMER32_CONTROL_ENABLE;
+	NVIC_SetPriority(T32_INT1_IRQn, 1);
+	NVIC_EnableIRQ(T32_INT1_IRQn);
+}
+
+
 extern "C"
 {
     void T32_INT1_IRQHandler(void)
     {
         __disable_irq();
         TIMER32_1->INTCLR = 0U;
-        P1->OUT ^= BIT0;
-        ADC14->CTL0 = ADC14->CTL0 | ADC14_CTL0_SC; // Start
+
         __enable_irq();
         return;
     }
@@ -176,10 +193,25 @@ extern "C"
     void ADC14_IRQHandler(void)
     {
         __disable_irq();
-        ADC14Result = ADC14->MEM[0];
-        ADC14->CLRIFGR0 = ADC14_CLRIFGR0_CLRIFG0;
+		ADC14Result = ADC14->MEM[0];
+		ADC14->CLRIFGR0 = ADC14_CLRIFGR0_CLRIFG0;
         __enable_irq();
         return;
     }
+
+void T32_INT2_IRQHandler(void) {
+	__disable_irq();
+	TIMER32_2->INTCLR = 0U;
+	if (init) {
+		P2->OUT ^= BIT0|BIT1|BIT2;
+		blink_counter++;
+	} else {
+        /* P1->OUT ^= BIT0; */
+		P2->OUT ^= lights;
+        // ADC14->CTL0 |= ADC14_CTL0_SC; /* Start */
+	}
+	__enable_irq();
+	return;
+}
 }
 
