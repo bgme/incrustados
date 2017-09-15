@@ -58,11 +58,11 @@
 //#include <boost/thread/thread.hpp>
 
 
-int lights 	= 1;
+int lights 	= 2;
 int on_off 	= 0;
 
 //Headers
-void initialize(int lights);
+void initialize();
 void turn_on_off(int lights, int on_off);
 void set_config_outport(int lights);
 void adc14_config();
@@ -82,11 +82,10 @@ int main(void)
     /* Initialize OPT3001 digital ambient light sensor */
     OPT3001_init();
 
-    /* Port 2 Out */
-    set_config_outport(lights);
-
     /* Ready to use */
-    initialize(lights);
+    initialize();
+
+    set_config_outport(lights);
 
     adc14_config();
 
@@ -96,19 +95,14 @@ int main(void)
     }
 }
 
-void initialize(int lights)
+void initialize()
 {
-	int i;
-	for (i=0; i<3; i++){ // To blink three times
-		switch(lights) {
-		    case 1:  P2->OUT = BIT0; break;
-            case 2:  P2->OUT = BIT1; break;
-		    case 3:  P2->OUT = BIT2; break;
-		    default: P2->OUT = BIT0;
-		}
-//		boost::this_thread::sleep( boost::posix_time::milliseconds(600) );
-//	     P2->OUT &= 0xF8; //Set 0 all lights
-//	    boost::this_thread::sleep( boost::posix_time::milliseconds(600) );
+	P2->DIR |= BIT0|BIT1|BIT2;
+	for (int i=0; i<3; i++){ // To blink three times
+		P2->OUT |= BIT0|BIT1|BIT2;
+		for(int i=0; i<500000; i++){}
+		P2->OUT &= 0xF8; //Set 0 all lights
+		for(int i=0; i<500000; i++){}
 	}
 }
 
