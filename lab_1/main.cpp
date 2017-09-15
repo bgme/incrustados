@@ -29,6 +29,7 @@ void T32_INT1_INIT(void);
 void BUTTON_CONFIG();
 void button_toggle(void);
 void CONFIG_LIGHT_SENSOR(void);
+void DEBOUNCE(void);
 
 using namespace std;
 int main(void) {
@@ -175,6 +176,13 @@ void BUTTON_CONFIG() {
 	NVIC_EnableIRQ(PORT5_IRQn);
 }
 
+void DEBOUNCE(void) {
+	do {
+		for (int i = 0; i < 3000; i++) {
+		}
+	} while ((P5->IN & 0x02) == 0x00);
+}
+
 extern "C" {
 void T32_INT1_IRQHandler(void) {
 	__disable_irq();
@@ -209,6 +217,7 @@ void T32_INT2_IRQHandler(void) {
 /* GPIO ISR */
 void PORT5_IRQHandler(void) {
 	__disable_irq();
+	DEBOUNCE();
 	uint32_t status = 0;
 	status = MAP_GPIO_getEnabledInterruptStatus(GPIO_PORT_P5);
 	MAP_GPIO_clearInterruptFlag(GPIO_PORT_P5, status);
