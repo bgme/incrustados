@@ -102,8 +102,8 @@ void initialize(int lights)
 	for (i=0; i<3; i++){ // To blink three times
 		switch(lights) {
 		    case 1:  P2->OUT = BIT0; break;
-            case 2:  P2->OUT = BIT0|BIT1; break;
-		    case 3:  P2->OUT = BIT0|BIT1|BIT2; break;
+            case 2:  P2->OUT = BIT1; break;
+		    case 3:  P2->OUT = BIT2; break;
 		    default: P2->OUT = BIT0;
 		}
 //		boost::this_thread::sleep( boost::posix_time::milliseconds(600) );
@@ -124,8 +124,8 @@ void turn_on_off(int lights, int on_off)
 			if(lux < 15){
 				switch(lights) {
 				case 1:  P2->OUT = BIT0; break;
-				case 2:  P2->OUT = BIT0|BIT1; break;
-				case 3:  P2->OUT = BIT0|BIT1|BIT2; break;
+				case 2:  P2->OUT = BIT1; break;
+				case 3:  P2->OUT = BIT2; break;
 				default: P2->OUT = BIT0;
 				}
 			}
@@ -135,9 +135,9 @@ void turn_on_off(int lights, int on_off)
 void set_config_outport(int lights)
 {
 	switch(lights) {
-		case 1:  P2->DIR = BIT0;
-		case 2:  P2->DIR = BIT0|BIT1;
-		case 3:  P2->DIR = BIT0|BIT1|BIT2;
+		case 1:  P2->DIR = BIT0; break;
+		case 2:  P2->DIR = BIT1; break;
+		case 3:  P2->DIR = BIT2; break;
 		default: P2->DIR = BIT0;
 	}
 }
