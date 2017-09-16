@@ -10,7 +10,10 @@
 /* Standard Includes */
 #include <stdint.h>
 #include <stdbool.h>
+#include <iostream>
 #include <vector>
+#include <stdio.h>
+using namespace std;
 
 #define ON true
 
@@ -18,6 +21,9 @@ uint8_t lights = 4; /* 1:red 2:green 4:blue */
 uint32_t blink_counter = 0U;
 uint32_t ADC14Result = 0U;
 bool init = true;
+bool new_sample;
+vector<uint16_t> samples_mic (20, 100);
+
 
 //Headers
 void initialize(void);
@@ -30,8 +36,11 @@ void BUTTON_CONFIG();
 void button_toggle(void);
 void CONFIG_LIGHT_SENSOR(void);
 void DEBOUNCE(void);
+void CONFIG_ADC14(void);
+void CONFIG_MICROPHONE(void);
+void PROCESS_NEW_SAMPLE(void);
+int  AVERAGE_SAMPLES_MIC(vector<uint16_t>);
 
-using namespace std;
 int main(void) {
 
 	//vector <uint16_t> samples;
@@ -62,9 +71,29 @@ int main(void) {
 
 //    adc14_config();
 	BUTTON_CONFIG();
-	while (1) {
 
+	CONFIG_ADC14();
+	CONFIG_MICROPHONE();
+	while (1) {
+		if(new_sample) PROCESS_NEW_SAMPLE();
 	}
+}
+
+void PROCESS_NEW_SAMPLE(void) {
+	int avg_5sec = AVERAGE_SAMPLES_MIC(samples_mic);
+	if (samples_mic[19] > avg_5sec & samples_mic[18] > avg_5sec
+			& samples_mic[17] > avg_5sec & samples_mic[16] > avg_5sec) {
+		turn_on(lights);
+	}
+	new_sample = false;
+}
+
+int AVERAGE_SAMPLES_MIC(vector<uint16_t> vec_samples) {
+	int sum = 0;
+	for (int i = 0; i < vec_samples.size(); i++) {
+		sum += vec_samples[i];
+	}
+	return vec_samples.empty() ? 0 : sum / vec_samples.size();
 }
 
 void CONFIG_LIGHT_SENSOR(void) {
@@ -73,6 +102,25 @@ void CONFIG_LIGHT_SENSOR(void) {
 	I2C_init();
 	/* Initialize OPT3001 digital ambient light sensor */
 	OPT3001_init();
+}
+
+void CONFIG_MICROPHONE(void){
+	// Set P4.3 for Analog input, disabling the I/O circuit.
+	P4->SEL0 = BIT3;
+	P4->SEL1 = BIT3;
+	P4->DIR &= ~BIT3;
+}
+
+void CONFIG_ADC14(void) {
+	ADC14->CTL0 = ADC14_CTL0_PDIV_0 | ADC14_CTL0_SHS_0 | ADC14_CTL0_DIV_7
+			| //predividido por 1,
+			ADC14_CTL0_SSEL__MCLK | ADC14_CTL0_SHT0_1 | ADC14_CTL0_ON
+			| ADC14_CTL0_SHP;
+	ADC14->MCTL[0] = ADC14_MCTLN_INCH_10 | ADC14_MCTLN_VRSEL_0;
+	ADC14->CTL0 = ADC14->CTL0 | ADC14_CTL0_ENC;
+	ADC14->IER0 = ADC14_IER0_IE0;
+	NVIC_SetPriority(ADC14_IRQn, 1);
+	NVIC_EnableIRQ(ADC14_IRQn);
 }
 
 void initialize(void) {
@@ -97,7 +145,6 @@ void turn_on(uint8_t lights) {
 		P2->OUT |= lights;
 		T32_INT1_INIT();
 	}
-
 }
 
 void button_toggle(void) {
@@ -114,7 +161,7 @@ void button_toggle(void) {
 void set_config_outport(uint8_t lights) {
 	P2->DIR |= lights;
 }
-
+/*
 void adc14_config(void) {
 	P1->DIR = BIT0;
 	P1->OUT = BIT0;
@@ -139,7 +186,7 @@ void adc14_config(void) {
 	NVIC_SetPriority(ADC14_IRQn, 1);
 	NVIC_EnableIRQ(ADC14_IRQn);
 }
-
+*/
 void T32_INIT2_CONFIG(bool init) {
 	if (init) {
 		TIMER32_2->LOAD = 0x0016E360; /* ~500ms ---> a 3Mhz */
@@ -196,6 +243,7 @@ void ADC14_IRQHandler(void) {
 	__disable_irq();
 	ADC14Result = ADC14->MEM[0];
 	ADC14->CLRIFGR0 = ADC14_CLRIFGR0_CLRIFG0;
+	new_sample = true;
 	__enable_irq();
 	return;
 }
