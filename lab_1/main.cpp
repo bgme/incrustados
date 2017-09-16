@@ -19,27 +19,27 @@ using namespace std;
 
 uint8_t lights = 4; /* 1:red 2:green 4:blue */
 uint32_t blink_counter = 0U;
-uint16_t ADC14Result = 0U;
+int ADC14Result = 0U;
 bool init = true;
 bool new_sample;
-vector<uint16_t> samples_mic (20, 100);
-uint16_t avg_5sec=0;
+int samples_mic[] = {[0 ... 19] = 100};;
+int avg_5sec;
+int threshold;
 
 //Headers
-void initialize(void);
-void turn_on(uint8_t lights);
-void set_config_outport(uint8_t lights);
-void adc14_config(void);
+void INITIALIZE(void);
+void TURN_ON(uint8_t lights);
+void SET_CONFIG_PORT2(uint8_t lights);
 void T32_INIT2_CONFIG(bool init);
 void T32_INT1_INIT(void);
 void BUTTON_CONFIG();
-void button_toggle(void);
+void BUTTON_TOGGLE(void);
 void CONFIG_LIGHT_SENSOR(void);
 void DEBOUNCE(void);
 void CONFIG_ADC14(void);
 void CONFIG_MICROPHONE(void);
 void PROCESS_NEW_SAMPLE(void);
-int  AVERAGE_SAMPLES_MIC(vector<uint16_t>);
+int  AVERAGE_SAMPLES_MIC(void);
 
 int main(void) {
 
@@ -55,11 +55,11 @@ int main(void) {
 	P1->DIR =BIT0;//For debugging led P1.0
 
 	/* Ready to use */
-	initialize(); /* Blink 3 times at the beginning. SRS-002 */
+	INITIALIZE(); /* Blink 3 times at the beginning. SRS-002 */
 
-	set_config_outport(lights);
+	SET_CONFIG_PORT2(lights);
 
-	turn_on(lights); /* Check at the beginning the intensity of light. SRS-003 */
+	TURN_ON(lights); /* Check at the beginning the intensity of light. SRS-003 */
 
 	T32_INIT2_CONFIG(init);
 
@@ -75,26 +75,30 @@ int main(void) {
 }
 
 void PROCESS_NEW_SAMPLE(void) {
-	samples_mic.erase(samples_mic.begin());
-	if (ADC14Result > 8192)
-		samples_mic.push_back(ADC14Result - 8192);
-	else
-		samples_mic.push_back(8192 - ADC14Result);
+	//samples_mic.erase(samples_mic.begin());
+	for (int i = 0; i < 19; i++) {
+		samples_mic[i] = samples_mic[i+1];
+	}
 
-	int avg_5sec = AVERAGE_SAMPLES_MIC(samples_mic);
-	int threshold = avg_5sec * 1.1; //float? Por el 1.1
+	if (ADC14Result > 8192)
+		samples_mic[19] = ADC14Result - 8192;
+	else
+		samples_mic[19] = 8192 - ADC14Result;
+
+	avg_5sec = AVERAGE_SAMPLES_MIC();
+	threshold = avg_5sec * 2;
 	if (samples_mic[19] > threshold & samples_mic[18] > threshold
 			& samples_mic[17] > threshold & samples_mic[17] > threshold)
-		turn_on(lights);
+		TURN_ON(lights);
 	new_sample = false;
 }
 
-int AVERAGE_SAMPLES_MIC(vector<uint16_t> vec_samples) {
+int AVERAGE_SAMPLES_MIC(void) {
 	int sum = 0;
-	for (int i = 0; i < vec_samples.size(); i++) {
-		sum += vec_samples[i];
+	for (int i = 0; i < 20; i++) {
+		sum += samples_mic[i];
 	}
-	return vec_samples.empty() ? 0 : sum / vec_samples.size();
+	return  sum / 20;
 }
 
 void CONFIG_LIGHT_SENSOR(void) {
@@ -124,7 +128,7 @@ void CONFIG_ADC14(void) {
 	NVIC_EnableIRQ(ADC14_IRQn);
 }
 
-void initialize(void) {
+void INITIALIZE(void) {
 	init = true;
 	P2->DIR |= BIT0 | BIT1 | BIT2;
 	P2->OUT &= 0xF8;
@@ -138,17 +142,17 @@ void initialize(void) {
 	init = false;
 }
 
-void turn_on(uint8_t lights) {
+void TURN_ON(uint8_t lights) {
 	unsigned long int lux = 0;
 	/* Obtain lux value from OPT3001 */
-	lux = OPT3001_getLux();
+	lux = 2;
 	if (lux < 15) {
 		P2->OUT |= lights;
 		T32_INT1_INIT();
 	}
 }
 
-void button_toggle(void) {
+void BUTTON_TOGGLE(void) {
 	if (P2->OUT & 0x7) {/* Led is currently ON */
 		P2->OUT &= 0xF8;
 		TIMER32_1->CONTROL = 0; /* turn off the timer1*/
@@ -159,7 +163,7 @@ void button_toggle(void) {
 	}
 }
 
-void set_config_outport(uint8_t lights) {
+void SET_CONFIG_PORT2(uint8_t lights) {
 	P2->DIR |= lights;
 }
 
@@ -245,7 +249,7 @@ void PORT5_IRQHandler(void) {
 	uint32_t status = 0;
 	status = MAP_GPIO_getEnabledInterruptStatus(GPIO_PORT_P5);
 	MAP_GPIO_clearInterruptFlag(GPIO_PORT_P5, status);
-	button_toggle();
+	BUTTON_TOGGLE();
 	__enable_irq();
 	return;
 }
