@@ -22,7 +22,7 @@ uint32_t blink_counter = 0U;
 int ADC14Result = 0U;
 bool init = true;
 bool new_sample;
-int samples_mic[] = {[0 ... 19] = 100};;
+int samples_mic[] = {[0 ... 19] = 100};
 int avg_5sec;
 int threshold;
 
@@ -52,8 +52,6 @@ int main(void) {
 	/*Config light sensor */
 	CONFIG_LIGHT_SENSOR();
 
-	P1->DIR =BIT0;//For debugging led P1.0
-
 	/* Ready to use */
 	INITIALIZE(); /* Blink 3 times at the beginning. SRS-002 */
 
@@ -75,7 +73,6 @@ int main(void) {
 }
 
 void PROCESS_NEW_SAMPLE(void) {
-	//samples_mic.erase(samples_mic.begin());
 	for (int i = 0; i < 19; i++) {
 		samples_mic[i] = samples_mic[i+1];
 	}
@@ -88,8 +85,9 @@ void PROCESS_NEW_SAMPLE(void) {
 	avg_5sec = AVERAGE_SAMPLES_MIC();
 	threshold = avg_5sec * 2;
 	if (samples_mic[19] > threshold & samples_mic[18] > threshold
-			& samples_mic[17] > threshold & samples_mic[17] > threshold)
+			& samples_mic[17] > threshold & samples_mic[16] > threshold){
 		TURN_ON(lights);
+	}
 	new_sample = false;
 }
 
@@ -145,7 +143,7 @@ void INITIALIZE(void) {
 void TURN_ON(uint8_t lights) {
 	unsigned long int lux = 0;
 	/* Obtain lux value from OPT3001 */
-	lux = 2;
+	lux = OPT3001_getLux();;
 	if (lux < 15) {
 		P2->OUT |= lights;
 		T32_INT1_INIT();
@@ -182,7 +180,7 @@ void T32_INIT2_CONFIG(bool init) {
 
 void T32_INT1_INIT(void) {
 	TIMER32_1->CONTROL = 0; /* turn off the timer, it would be used to reset the count */
-	TIMER32_1->LOAD = 0x055D4A80; /* ~30s ---> a 3Mhz */
+	TIMER32_1->LOAD = 0x2AEA540; /* ~15s ---> a 3Mhz */
 	TIMER32_1->CONTROL = TIMER32_CONTROL_SIZE | TIMER32_CONTROL_PRESCALE_0
 			| TIMER32_CONTROL_MODE | TIMER32_CONTROL_IE | TIMER32_CONTROL_ENABLE
 			| TIMER32_CONTROL_ONESHOT;
@@ -235,7 +233,6 @@ void T32_INT2_IRQHandler(void) {
 		P2->OUT ^= BIT0 | BIT1 | BIT2;
 		blink_counter++;
 	} else {
-		/* P1->OUT ^= BIT0; */
 		ADC14->CTL0 |= ADC14_CTL0_SC; /* Start */
 	}
 	__enable_irq();
