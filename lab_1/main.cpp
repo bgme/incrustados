@@ -19,11 +19,11 @@ using namespace std;
 
 uint8_t lights = 4; /* 1:red 2:green 4:blue */
 uint32_t blink_counter = 0U;
-uint32_t ADC14Result = 0U;
+uint16_t ADC14Result = 0U;
 bool init = true;
 bool new_sample;
 vector<uint16_t> samples_mic (20, 100);
-
+uint16_t avg_5sec=0;
 
 //Headers
 void initialize(void);
@@ -43,14 +43,6 @@ int  AVERAGE_SAMPLES_MIC(vector<uint16_t>);
 
 int main(void) {
 
-	//vector <uint16_t> samples;
-	//samples.push_back(0x0012); /* Add an element at the end*/
-
-	//uint16_t hola = samples.at(0);
-	//samples.erase(samples.begin()); /* Erase the first element*/
-
-	//samples.size();
-
 	/* Halting WDT and disabling master interrupts */
 	WDTCTL = WDTPW | WDTHOLD; /* Stop watchdog timer */
 
@@ -59,6 +51,8 @@ int main(void) {
 
 	/*Config light sensor */
 	CONFIG_LIGHT_SENSOR();
+
+	P1->DIR =BIT0;//For debugging led P1.0
 
 	/* Ready to use */
 	initialize(); /* Blink 3 times at the beginning. SRS-002 */
@@ -69,22 +63,29 @@ int main(void) {
 
 	T32_INIT2_CONFIG(init);
 
-//    adc14_config();
 	BUTTON_CONFIG();
 
 	CONFIG_ADC14();
+
 	CONFIG_MICROPHONE();
+
 	while (1) {
 		if(new_sample) PROCESS_NEW_SAMPLE();
 	}
 }
 
 void PROCESS_NEW_SAMPLE(void) {
+	samples_mic.erase(samples_mic.begin());
+	if (ADC14Result > 8192)
+		samples_mic.push_back(ADC14Result - 8192);
+	else
+		samples_mic.push_back(8192 - ADC14Result);
+
 	int avg_5sec = AVERAGE_SAMPLES_MIC(samples_mic);
-	if (samples_mic[19] > avg_5sec & samples_mic[18] > avg_5sec
-			& samples_mic[17] > avg_5sec & samples_mic[16] > avg_5sec) {
+	int threshold = avg_5sec * 1.1; //float? Por el 1.1
+	if (samples_mic[19] > threshold & samples_mic[18] > threshold
+			& samples_mic[17] > threshold & samples_mic[17] > threshold)
 		turn_on(lights);
-	}
 	new_sample = false;
 }
 
@@ -161,32 +162,7 @@ void button_toggle(void) {
 void set_config_outport(uint8_t lights) {
 	P2->DIR |= lights;
 }
-/*
-void adc14_config(void) {
-	P1->DIR = BIT0;
-	P1->OUT = BIT0;
-	// Set P4.3 for Analog input, disabling the I/O circuit.
-	P4->SEL0 = BIT3;
-	P4->SEL1 = BIT3;
-	P4->DIR &= ~BIT3;
 
-	//TIMER32_1->LOAD = 0x00B71B00; //~0.5s ---> a 48Mhz
-	TIMER32_1->LOAD = 0x0000BB80; //~0.5s ---> a 48Mhz
-	TIMER32_1->CONTROL =
-	TIMER32_CONTROL_SIZE | TIMER32_CONTROL_PRESCALE_0 | TIMER32_CONTROL_MODE
-			| TIMER32_CONTROL_IE | TIMER32_CONTROL_ENABLE;
-	NVIC_SetPriority(T32_INT1_IRQn, 1);
-	NVIC_EnableIRQ(T32_INT1_IRQn);
-
-	ADC14->CTL0 = ADC14_CTL0_PDIV_0 | ADC14_CTL0_SHS_0 | ADC14_CTL0_DIV_7 |
-	ADC14_CTL0_SSEL__MCLK | ADC14_CTL0_SHT0_1 | ADC14_CTL0_ON | ADC14_CTL0_SHP;
-	ADC14->MCTL[0] = ADC14_MCTLN_INCH_10 | ADC14_MCTLN_VRSEL_0;
-	ADC14->CTL0 = ADC14->CTL0 | ADC14_CTL0_ENC;
-	ADC14->IER0 = ADC14_IER0_IE0;
-	NVIC_SetPriority(ADC14_IRQn, 1);
-	NVIC_EnableIRQ(ADC14_IRQn);
-}
-*/
 void T32_INIT2_CONFIG(bool init) {
 	if (init) {
 		TIMER32_2->LOAD = 0x0016E360; /* ~500ms ---> a 3Mhz */
