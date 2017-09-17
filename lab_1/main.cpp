@@ -17,14 +17,13 @@ using namespace std;
 
 #define ON true
 
-uint8_t lights = 4; /* 1:red 2:green 4:blue */
-uint32_t blink_counter = 0U;
+uint8_t lights = 7; /* 1:red 2:green 4:blue */
+int8_t blink_counter = 3;
 int ADC14Result = 0U;
 bool init = true;
 bool new_sample;
-int samples_mic[] = {[0 ... 19] = 100};
-int avg_5sec;
-int threshold;
+int samples_mic[] = { [0 ... 19] = 100 };
+int noise_percent = 50;
 
 //Headers
 void INITIALIZE(void);
@@ -39,7 +38,7 @@ void DEBOUNCE(void);
 void CONFIG_ADC14(void);
 void CONFIG_MICROPHONE(void);
 void PROCESS_NEW_SAMPLE(void);
-int  AVERAGE_SAMPLES_MIC(void);
+int AVERAGE_SAMPLES_MIC(void);
 
 int main(void) {
 
@@ -68,13 +67,14 @@ int main(void) {
 	CONFIG_MICROPHONE();
 
 	while (1) {
-		if(new_sample) PROCESS_NEW_SAMPLE();
+		if (new_sample)
+			PROCESS_NEW_SAMPLE();
 	}
 }
 
 void PROCESS_NEW_SAMPLE(void) {
 	for (int i = 0; i < 19; i++) {
-		samples_mic[i] = samples_mic[i+1];
+		samples_mic[i] = samples_mic[i + 1];
 	}
 
 	if (ADC14Result > 8192)
@@ -82,10 +82,10 @@ void PROCESS_NEW_SAMPLE(void) {
 	else
 		samples_mic[19] = 8192 - ADC14Result;
 
-	avg_5sec = AVERAGE_SAMPLES_MIC();
-	threshold = avg_5sec * 2;
+	int avg_5sec = AVERAGE_SAMPLES_MIC();
+	int threshold = avg_5sec * (noise_percent+100) / 100;
 	if (samples_mic[19] > threshold & samples_mic[18] > threshold
-			& samples_mic[17] > threshold & samples_mic[16] > threshold){
+			& samples_mic[17] > threshold & samples_mic[16] > threshold) {
 		TURN_ON(lights);
 	}
 	new_sample = false;
@@ -96,7 +96,7 @@ int AVERAGE_SAMPLES_MIC(void) {
 	for (int i = 0; i < 20; i++) {
 		sum += samples_mic[i];
 	}
-	return  sum / 20;
+	return sum / 20;
 }
 
 void CONFIG_LIGHT_SENSOR(void) {
@@ -107,7 +107,7 @@ void CONFIG_LIGHT_SENSOR(void) {
 	OPT3001_init();
 }
 
-void CONFIG_MICROPHONE(void){
+void CONFIG_MICROPHONE(void) {
 	// Set P4.3 for Analog input, disabling the I/O circuit.
 	P4->SEL0 = BIT3;
 	P4->SEL1 = BIT3;
@@ -132,7 +132,7 @@ void INITIALIZE(void) {
 	P2->OUT &= 0xF8;
 
 	T32_INIT2_CONFIG(init);
-	while (blink_counter < 6) {
+	while (blink_counter+2 >= 0) {
 		/* To blink three times */
 	}
 	TIMER32_2->CONTROL = 0; /* Disable the timer for saving energy */
@@ -143,7 +143,8 @@ void INITIALIZE(void) {
 void TURN_ON(uint8_t lights) {
 	unsigned long int lux = 0;
 	/* Obtain lux value from OPT3001 */
-	lux = OPT3001_getLux();;
+	lux = OPT3001_getLux();
+	;
 	if (lux < 15) {
 		P2->OUT |= lights;
 		T32_INT1_INIT();
@@ -231,7 +232,7 @@ void T32_INT2_IRQHandler(void) {
 	TIMER32_2->INTCLR = 0U;
 	if (init) {
 		P2->OUT ^= BIT0 | BIT1 | BIT2;
-		blink_counter++;
+		blink_counter -= 1;
 	} else {
 		ADC14->CTL0 |= ADC14_CTL0_SC; /* Start */
 	}
