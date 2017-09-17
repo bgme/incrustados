@@ -17,13 +17,13 @@ using namespace std;
 
 #define ON true
 
-uint8_t lights = 7; /* 1:red 2:green 4:blue */
-int8_t blink_counter = 3;
+uint8_t lights = 4; /* 1:red 2:green 4:blue */
+int8_t blink_counter = 6;
 int ADC14Result = 0U;
 bool init = true;
 bool new_sample;
 int samples_mic[] = { [0 ... 19] = 100 };
-int noise_percent = 50;
+int noise_percent = 60;
 
 //Headers
 void INITIALIZE(void);
@@ -132,7 +132,7 @@ void INITIALIZE(void) {
 	P2->OUT &= 0xF8;
 
 	T32_INIT2_CONFIG(init);
-	while (blink_counter+2 >= 0) {
+	while (blink_counter > 0) {
 		/* To blink three times */
 	}
 	TIMER32_2->CONTROL = 0; /* Disable the timer for saving energy */
