@@ -24,10 +24,11 @@ bool init = true;
 bool new_sample;
 int samples_mic[] = { [0 ... 19] = 100 };
 int noise_percent = 60;
+uint32_t min_lux = 15;
 
 //Headers
 void INITIALIZE(void);
-void TURN_ON(uint8_t lights);
+void TURN_ON(uint8_t lights, uint32_t min_lux);
 void SET_CONFIG_PORT2(uint8_t lights);
 void T32_INIT2_CONFIG(bool init);
 void T32_INT1_INIT(void);
@@ -56,7 +57,7 @@ int main(void) {
 
 	SET_CONFIG_PORT2(lights);
 
-	TURN_ON(lights); /* Check at the beginning the intensity of light. SRS-003 */
+	TURN_ON(lights, min_lux); /* Check at the beginning the intensity of light. SRS-003 */
 
 	T32_INIT2_CONFIG(init);
 
@@ -86,7 +87,7 @@ void PROCESS_NEW_SAMPLE(void) {
 	int threshold = avg_5sec * (noise_percent+100) / 100;
 	if (samples_mic[19] > threshold & samples_mic[18] > threshold
 			& samples_mic[17] > threshold & samples_mic[16] > threshold) {
-		TURN_ON(lights);
+		TURN_ON(lights, min_lux);
 	}
 	new_sample = false;
 }
@@ -140,12 +141,12 @@ void INITIALIZE(void) {
 	init = false;
 }
 
-void TURN_ON(uint8_t lights) {
+void TURN_ON(uint8_t lights, uint32_t min_lux) {
 	unsigned long int lux = 0;
 	/* Obtain lux value from OPT3001 */
 	lux = OPT3001_getLux();
 	;
-	if (lux < 15) {
+	if ((uint32_t)lux < min_lux) {
 		P2->OUT |= lights;
 		T32_INT1_INIT();
 	}
@@ -232,7 +233,7 @@ void T32_INT2_IRQHandler(void) {
 	TIMER32_2->INTCLR = 0U;
 	if (init) {
 		P2->OUT ^= BIT0 | BIT1 | BIT2;
-		blink_counter -= 1;
+		blink_counter --;
 	} else {
 		ADC14->CTL0 |= ADC14_CTL0_SC; /* Start */
 	}
