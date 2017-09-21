@@ -11,6 +11,6 @@
 
 /* Percentage of noise that the last second has to be over
  * the last five seconds */
-#define noise_percent  25
+#define noise_percent  15
 
 #endif /* PROFILE_HPP_ */

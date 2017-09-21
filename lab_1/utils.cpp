@@ -42,15 +42,21 @@ uint32_t AVERAGE_SAMPLES_MIC(uint32_t * samples_mic)
 void CONFIG_LIGHT_SENSOR(void)
 {
     /* Initialize I2C communication */
+    /* Select I2C function for I2C_SCL, CLK at P6.5
+     * and I2C_SDA, data at P6.4 */
     Init_I2C_GPIO();
+
+    /* Initialize I2C module */
     I2C_init();
-    /* Initialize OPT3001 digital ambient light sensor */
+
+    /* Initialize OPT3001 digital ambient light sensor
+     * Set slave address */
     OPT3001_init();
 }
 
 void CONFIG_MICROPHONE(void)
 {
-    // Set P4.3 for Analog input, disabling the I/O circuit.
+    /* Set P4.3 for Analog input, disabling the I/O circuit */
     P4->SEL0 = BIT3;
     P4->SEL1 = BIT3;
     P4->DIR &= ~BIT3;
@@ -58,8 +64,9 @@ void CONFIG_MICROPHONE(void)
 
 void CONFIG_ADC14(void)
 {
+	/* Predivide by 1 */
     ADC14->CTL0 = ADC14_CTL0_PDIV_0 | ADC14_CTL0_SHS_0 | ADC14_CTL0_DIV_7
-            | //predividido por 1,
+            |
             ADC14_CTL0_SSEL__MCLK | ADC14_CTL0_SHT0_1 | ADC14_CTL0_ON
             | ADC14_CTL0_SHP;
     ADC14->MCTL[0] = ADC14_MCTLN_INCH_10 | ADC14_MCTLN_VRSEL_0;
@@ -137,7 +144,7 @@ void T32_INIT2_CONFIG(bool init)
 void T32_INT1_INIT(void)
 {
     TIMER32_1->CONTROL = 0; /* turn off the timer, it would be used to reset the count */
-    TIMER32_1->LOAD = 0x2AEA540; /* ~15s ---> a 3Mhz */
+    TIMER32_1->LOAD = 0x02AEA540; /* ~15s ---> a 3Mhz */
     TIMER32_1->CONTROL = TIMER32_CONTROL_SIZE | TIMER32_CONTROL_PRESCALE_0
             | TIMER32_CONTROL_MODE | TIMER32_CONTROL_IE | TIMER32_CONTROL_ENABLE
             | TIMER32_CONTROL_ONESHOT;
