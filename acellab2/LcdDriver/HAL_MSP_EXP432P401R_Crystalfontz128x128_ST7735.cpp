@@ -37,11 +37,10 @@
 //
 //*****************************************************************************
 
-#include "HAL_MSP_EXP432P401R_Crystalfontz128x128_ST7735.h"
+#include <LcdDriver/HAL_MSP_EXP432P401R_Crystalfontz128x128_ST7735.hpp>
 #include <ti/grlib/grlib.h>
 #include <ti/devices/msp432p4xx/driverlib/driverlib.h>
 #include <stdint.h>
-
 void HAL_LCD_PortInit(void)
 {
     // LCD_SCK

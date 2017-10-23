@@ -36,10 +36,10 @@
 //
 //*****************************************************************************
 
+#include <LcdDriver/Crystalfontz128x128_ST7735.hpp>
+#include <LcdDriver/HAL_MSP_EXP432P401R_Crystalfontz128x128_ST7735.hpp>
 #include <ti/grlib/grlib.h>
-#include "Crystalfontz128x128_ST7735.h"
 #include <ti/devices/msp432p4xx/driverlib/driverlib.h>
-#include "HAL_MSP_EXP432P401R_Crystalfontz128x128_ST7735.h"
 #include <stdint.h>
 
 uint8_t Lcd_Orientation;
@@ -616,3 +616,4 @@ const Graphics_Display_Functions g_sCrystalfontz128x128_funcs =
     Crystalfontz128x128_ClearScreen
 
 };
+
