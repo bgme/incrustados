@@ -22,6 +22,10 @@ uint8_t DRAW::run()
 {
     uint8_t status = NO_ERR;
 
+    resultsBuffer[0] =  *(this->ptr_MailBox);
+    resultsBuffer[1] = *(this->ptr_MailBox+1);
+    resultsBuffer[2] = *(this->ptr_MailBox+2);
+
     if (resultsBuffer[1] < 8192)
     {
         Crystalfontz128x128_SetOrientation(LCD_ORIENTATION_UP);
@@ -49,12 +53,6 @@ uint8_t DRAW::setup()
                          &g_sCrystalfontz128x128_funcs);
     Graphics_setForegroundColor(&g_sContext, GRAPHICS_COLOR_RED);
     Graphics_setBackgroundColor(&g_sContext, GRAPHICS_COLOR_WHITE);
-
-    /* FIXME: Remove this when message is working */
-    /* Testing values */
-    resultsBuffer[0] = 8192;
-    resultsBuffer[1] = 8192;
-    resultsBuffer[2] = 8192;
 
     return status;
 }

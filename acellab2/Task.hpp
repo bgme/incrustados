@@ -5,6 +5,7 @@
 
 #define NO_ERR 0
 #define RET_ERR 1
+#define TASK_MAIL_SIZE       5
 
 class Task
 {

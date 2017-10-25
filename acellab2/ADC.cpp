@@ -23,6 +23,10 @@ uint8_t ADC::run()
 
     /* TODO: send a message to DRAW */
     /* Store ADC14 conversion results */
+    *(this->ptr_MailBox) = ADC14_getResult(ADC_MEM0);
+    *(this->ptr_MailBox+1)  = ADC14_getResult(ADC_MEM1);
+    *(this->ptr_MailBox+2)  = ADC14_getResult(ADC_MEM2);
+
     //        resultsBuffer[0] = ADC14_getResult(ADC_MEM0);
     //        resultsBuffer[1] = ADC14_getResult(ADC_MEM1);
     //        resultsBuffer[2] = ADC14_getResult(ADC_MEM2);

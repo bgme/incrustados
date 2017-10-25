@@ -1,12 +1,14 @@
 #include "Scheduler.hpp"
 
-
-
 // - Scheduler constructor
 Scheduler::Scheduler()
 {
     m_u8OpenSlots = static_cast<uint8_t>(NUMBER_OF_SLOTS);
     m_u8NextSlot = 0;
+    this->mail_box[0]=8192;
+    this->mail_box[1]=8192;
+    this->mail_box[2]=8192;
+
     for (int index = 0; index < NUMBER_OF_SLOTS; index++)
     {
         m_aSchedule[index].pToAttach = (uintptr_t) 0; // Init to an invalid pointer
@@ -14,7 +16,7 @@ Scheduler::Scheduler()
     return;
 }
 // - The attach function, inserts the task into the schedule slots.
-uint8_t Scheduler::attach(Task * i_ToAttach, uint64_t i_u64TickInterval, uint32_t * o_u64MailBox)
+uint8_t Scheduler::attach(Task * i_ToAttach, uint64_t i_u64TickInterval, uint32_t ** o_u32MailBox)
 {
     uint8_t l_ErrorCode = NO_ERR;
     st_TaskInfo l_st_StructToAttach;
@@ -30,7 +32,7 @@ uint8_t Scheduler::attach(Task * i_ToAttach, uint64_t i_u64TickInterval, uint32_
         m_u8OpenSlots--;
         m_u8NextSlot++;
 
-        o_u64MailBox = &this->mail_box[0];
+        *o_u32MailBox = &this->mail_box[0];
     }
     else
     {

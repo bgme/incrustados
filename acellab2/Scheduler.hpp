@@ -12,7 +12,7 @@
 
 #define NUMBER_OF_SLOTS 255
 #define NULL            0
-#define MAIL_SIZE       5
+#define MAIL_SIZE       3
 
 
 // - This structure defines the Task Information
@@ -28,7 +28,7 @@ class Scheduler
 public:
     Scheduler();
     uint64_t m_u64ticks;
-    uint8_t attach(Task * i_ToAttach, uint64_t i_u64TickInterval, uint32_t * o_u64MailBox);
+    uint8_t attach(Task * i_ToAttach, uint64_t i_u64TickInterval, uint32_t ** o_u64MailBox);
     uint8_t run(void);
     uint8_t setup(void);
 
