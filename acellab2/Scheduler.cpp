@@ -1,5 +1,7 @@
 #include "Scheduler.hpp"
 
+
+
 // - Scheduler constructor
 Scheduler::Scheduler()
 {
@@ -12,7 +14,7 @@ Scheduler::Scheduler()
     return;
 }
 // - The attach function, inserts the task into the schedule slots.
-uint8_t Scheduler::attach(Task * i_ToAttach, uint64_t i_u64TickInterval)
+uint8_t Scheduler::attach(Task * i_ToAttach, uint64_t i_u64TickInterval, uint32_t * o_u64MailBox)
 {
     uint8_t l_ErrorCode = NO_ERR;
     st_TaskInfo l_st_StructToAttach;
@@ -27,6 +29,8 @@ uint8_t Scheduler::attach(Task * i_ToAttach, uint64_t i_u64TickInterval)
         m_aSchedule[m_u8NextSlot] = l_st_StructToAttach;
         m_u8OpenSlots--;
         m_u8NextSlot++;
+
+        o_u64MailBox = &this->mail_box[0];
     }
     else
     {

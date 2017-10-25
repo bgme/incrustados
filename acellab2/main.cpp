@@ -74,9 +74,9 @@ void main(void)
     // - Run the overall setup function for the system
     Setup();
     // - Attach the Tasks to the Scheduler;
-    g_MainScheduler.attach(&BlueLED, 500);
-    g_MainScheduler.attach(&Adc, 500);
-    g_MainScheduler.attach(&drawH, 500);
+    g_MainScheduler.attach(&BlueLED, 500, BlueLED.ptr_MailBox);
+    g_MainScheduler.attach(&Adc, 500, Adc.ptr_MailBox);
+    g_MainScheduler.attach(&drawH, 500, drawH.ptr_MailBox);
     //g_MainScheduler.attach(&GreenLED, 300);
     // - Run the Setup for the scheduler and all tasks
     g_MainScheduler.setup();

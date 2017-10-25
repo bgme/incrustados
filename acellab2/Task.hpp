@@ -46,6 +46,8 @@ public:
         return (0);
     }
     ;
+
+    uint32_t * ptr_MailBox;
 private:
     static uint8_t m_u8NextTaskID;
     uint8_t m_u8Priority;
