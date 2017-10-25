@@ -7,10 +7,10 @@ LED::LED(uint16_t i_BITN)
 
 uint8_t LED::run()
 {
-    //#########################
-    // Blink code Assuming PORT2
-	P2->OUT ^= m_u16BITN;
-    //#########################
+//    //#########################
+//    // Blink code Assuming PORT2
+//	P2->OUT ^= m_u16BITN;
+//    //#########################
     return(NO_ERR);
 }
 

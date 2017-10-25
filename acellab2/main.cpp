@@ -47,94 +47,8 @@
 #include "LcdDriver/Crystalfontz128x128_ST7735.hpp"
 #include <stdio.h>
 
-///* Graphic library context */
-//Graphics_Context g_sContext;
-//
-///* Graphic library display */
-//Graphics_Display g_sDisplay;
-//
-//Graphics_Rectangle values_rectangle_heaven;
-//Graphics_Rectangle values_rectangle_earth;
-//
-///* ADC results buffer */
-//static uint16_t resultsBuffer[3];
-//
 //void drawHorizon(void);
-//
-///*
-// * Main function
-// */
-//int main(void)
-//{
-//    /* Halting WDT and disabling master interrupts */
-//    MAP_WDT_A_holdTimer();
-//    MAP_Interrupt_disableMaster();
-//
-//    /* Initializes Clock System */
-//    MAP_CS_setDCOCenteredFrequency(CS_DCO_FREQUENCY_48);
-//
-//    /* Initializes display */
-//    Crystalfontz128x128_Init();
-//
-//    /* Set default screen orientation */
-//    Crystalfontz128x128_SetOrientation(LCD_ORIENTATION_UP);
-//
-//    /* Initializes graphics context */
-//    Graphics_initContext(&g_sContext, &g_sDisplay, &g_sCrystalfontz128x128_funcs);
-//    Graphics_setForegroundColor(&g_sContext, GRAPHICS_COLOR_RED);
-//    Graphics_setBackgroundColor(&g_sContext, GRAPHICS_COLOR_WHITE);
-//
-//    /* Configures Pin 4.0, 4.2, and 6.1 as ADC input */
-//    MAP_GPIO_setAsPeripheralModuleFunctionInputPin(GPIO_PORT_P4, GPIO_PIN0 | GPIO_PIN2, GPIO_TERTIARY_MODULE_FUNCTION);
-//    MAP_GPIO_setAsPeripheralModuleFunctionInputPin(GPIO_PORT_P6, GPIO_PIN1, GPIO_TERTIARY_MODULE_FUNCTION);
-//
-//    /* Initializing ADC (ADCOSC/64/8) */
-//    MAP_ADC14_enableModule();
-//    MAP_ADC14_initModule(ADC_CLOCKSOURCE_ADCOSC, ADC_PREDIVIDER_64, ADC_DIVIDER_8,
-//            0);
-//
-//    /* Configuring ADC Memory (ADC_MEM0 - ADC_MEM2 (A11, A13, A14)  with no repeat)
-//         * with internal 2.5v reference */
-//    MAP_ADC14_configureMultiSequenceMode(ADC_MEM0, ADC_MEM2, true);
-//    MAP_ADC14_configureConversionMemory(ADC_MEM0,
-//            ADC_VREFPOS_AVCC_VREFNEG_VSS,
-//            ADC_INPUT_A14, ADC_NONDIFFERENTIAL_INPUTS);
-//
-//    MAP_ADC14_configureConversionMemory(ADC_MEM1,
-//            ADC_VREFPOS_AVCC_VREFNEG_VSS,
-//            ADC_INPUT_A13, ADC_NONDIFFERENTIAL_INPUTS);
-//
-//    MAP_ADC14_configureConversionMemory(ADC_MEM2,
-//            ADC_VREFPOS_AVCC_VREFNEG_VSS,
-//            ADC_INPUT_A11, ADC_NONDIFFERENTIAL_INPUTS);
-//
-//    /* Enabling the interrupt when a conversion on channel 2 (end of sequence)
-//     *  is complete and enabling conversions */
-//    MAP_ADC14_enableInterrupt(ADC_INT2);
-//
-//    /* Enabling Interrupts */
-//    MAP_Interrupt_enableInterrupt(INT_ADC14);
-//    MAP_Interrupt_enableMaster();
-//
-//    /* Setting up the sample timer to automatically step through the sequence
-//     * convert.
-//     */
-//    MAP_ADC14_enableSampleTimer(ADC_AUTOMATIC_ITERATION);
-//
-//    /* Triggering the start of the sample */
-//    MAP_ADC14_enableConversion();
-//    MAP_ADC14_toggleConversionTrigger();
-//
-//    while(1)
-//    {
-//
-//    }
-//}
-//
-//
-///*
-//
-// */
+
 //void drawHorizon()
 //{
 //    values_rectangle_heaven.xMin = 0;
@@ -218,43 +132,13 @@
 //   }
 //*/
 //}
-///* This interrupt is fired whenever a conversion is completed and placed in
-// * ADC_MEM2. This signals the end of conversion and the results array is
-// * grabbed and placed in resultsBuffer */
-//void ADC14_IRQHandler(void)
-//{
-//    uint64_t status;
-//
-//    status = MAP_ADC14_getEnabledInterruptStatus();
-//    MAP_ADC14_clearInterruptFlag(status);
-//
-//    /* ADC_MEM2 conversion completed */
-//    if(status & ADC_INT2)
-//    {
-//        /* Store ADC14 conversion results */
-//        resultsBuffer[0] = ADC14_getResult(ADC_MEM0);
-//        resultsBuffer[1] = ADC14_getResult(ADC_MEM1);
-//        resultsBuffer[2] = ADC14_getResult(ADC_MEM2);
-//
-//        /*
-//         * Draw accelerometer data on display and determine if orientation
-//         * change thresholds are reached and redraw as necessary
-//         */
-//        if (resultsBuffer[1] < 8192) {
-//                Crystalfontz128x128_SetOrientation(LCD_ORIENTATION_UP);
-//                drawHorizon();
-//        }else{
-//                Crystalfontz128x128_SetOrientation(LCD_ORIENTATION_DOWN);
-//                drawHorizon();
-//        }
-//    }
-//}
 
 //#include "msp.h"
 #include "main.hpp"
 #include "Scheduler.hpp"
 #include "Task.hpp"
 #include "LED.hpp"
+#include "ADC.hpp"
 
 // ##########################
 // Global/Static declarations
@@ -262,18 +146,6 @@
 uint8_t Task::m_u8NextTaskID = 0; // - Init task ID
 volatile static uint64_t g_SystemTicks = 0; // - The system counter.
 Scheduler g_MainScheduler; // - Instantiate a Scheduler
-
-/* Graphic library context */
-Graphics_Context g_sContext;
-
-/* Graphic library display */
-Graphics_Display g_sDisplay;
-
-Graphics_Rectangle values_rectangle_heaven;
-Graphics_Rectangle values_rectangle_earth;
-
-/* ADC results buffer */
-//static uint16_t resultsBuffer[3];
 
 // #########################
 //          MAIN
@@ -283,11 +155,13 @@ void main(void)
 
     // - Instantiate two new Tasks
     LED BlueLED(BIT2);
-    LED GreenLED(BIT1);
+   // LED GreenLED(BIT1);
+    ADC Adc(BIT2);
     // - Run the overall setup function for the system
     Setup();
     // - Attach the Tasks to the Scheduler;
-    g_MainScheduler.attach(&BlueLED, 1000);
+    g_MainScheduler.attach(&BlueLED, 500);
+    g_MainScheduler.attach(&Adc, 500);
     //g_MainScheduler.attach(&GreenLED, 300);
     // - Run the Setup for the scheduler and all tasks
     g_MainScheduler.setup();
@@ -340,57 +214,7 @@ void Setup(void)
     NVIC_SetPriority(T32_INT1_IRQn,1);
     NVIC_EnableIRQ(T32_INT1_IRQn);
 
-    /* Initializes display */
-    Crystalfontz128x128_Init();
-
-    /* Set default screen orientation */
-    Crystalfontz128x128_SetOrientation(LCD_ORIENTATION_UP);
-
-    /* Initializes graphics context */
-    Graphics_initContext(&g_sContext, &g_sDisplay, &g_sCrystalfontz128x128_funcs);
-    Graphics_setForegroundColor(&g_sContext, GRAPHICS_COLOR_RED);
-    Graphics_setBackgroundColor(&g_sContext, GRAPHICS_COLOR_WHITE);
-
-    /* Configures Pin 4.0, 4.2, and 6.1 as ADC input */
-    MAP_GPIO_setAsPeripheralModuleFunctionInputPin(GPIO_PORT_P4, GPIO_PIN0 | GPIO_PIN2, GPIO_TERTIARY_MODULE_FUNCTION);
-    MAP_GPIO_setAsPeripheralModuleFunctionInputPin(GPIO_PORT_P6, GPIO_PIN1, GPIO_TERTIARY_MODULE_FUNCTION);
-
-    /* Initializing ADC (ADCOSC/64/8) */
-    MAP_ADC14_enableModule();
-    MAP_ADC14_initModule(ADC_CLOCKSOURCE_ADCOSC, ADC_PREDIVIDER_64, ADC_DIVIDER_8,
-            0);
-
-    /* Configuring ADC Memory (ADC_MEM0 - ADC_MEM2 (A11, A13, A14)  with no repeat)
-         * with internal 2.5v reference */
-    MAP_ADC14_configureMultiSequenceMode(ADC_MEM0, ADC_MEM2, true);
-    MAP_ADC14_configureConversionMemory(ADC_MEM0,
-            ADC_VREFPOS_AVCC_VREFNEG_VSS,
-            ADC_INPUT_A14, ADC_NONDIFFERENTIAL_INPUTS);
-
-    MAP_ADC14_configureConversionMemory(ADC_MEM1,
-            ADC_VREFPOS_AVCC_VREFNEG_VSS,
-            ADC_INPUT_A13, ADC_NONDIFFERENTIAL_INPUTS);
-
-    MAP_ADC14_configureConversionMemory(ADC_MEM2,
-            ADC_VREFPOS_AVCC_VREFNEG_VSS,
-            ADC_INPUT_A11, ADC_NONDIFFERENTIAL_INPUTS);
-
-    /* Enabling the interrupt when a conversion on channel 2 (end of sequence)
-     *  is complete and enabling conversions */
-    MAP_ADC14_enableInterrupt(ADC_INT2);
-
-    /* Enabling Interrupts */
-    MAP_Interrupt_enableInterrupt(INT_ADC14);
     MAP_Interrupt_enableMaster();
-
-    /* Setting up the sample timer to automatically step through the sequence
-     * convert.
-     */
-    MAP_ADC14_enableSampleTimer(ADC_AUTOMATIC_ITERATION);
-
-    /* Triggering the start of the sample */
-    MAP_ADC14_enableConversion();
-    MAP_ADC14_toggleConversionTrigger();
     __enable_irq();
 
     return;
