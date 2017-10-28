@@ -49,6 +49,7 @@ public:
     ;
 
     uint32_t * ptr_MailBox;
+    bool *run_flag;
 private:
     static uint8_t m_u8NextTaskID;
     uint8_t m_u8Priority;

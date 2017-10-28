@@ -27,9 +27,7 @@ uint8_t ADC::run()
     *(this->ptr_MailBox+1)  = ADC14_getResult(ADC_MEM1);
     *(this->ptr_MailBox+2)  = ADC14_getResult(ADC_MEM2);
 
-    //        resultsBuffer[0] = ADC14_getResult(ADC_MEM0);
-    //        resultsBuffer[1] = ADC14_getResult(ADC_MEM1);
-    //        resultsBuffer[2] = ADC14_getResult(ADC_MEM2);
+    *(this->run_flag + 1) = true; // Activate the flag for running the next task
     return status;
 }
 
@@ -45,9 +43,8 @@ uint8_t ADC::setup()
 
     /* Initializing ADC (ADCOSC/64/8) */
     MAP_ADC14_enableModule();
-    MAP_ADC14_initModule(ADC_CLOCKSOURCE_ADCOSC, ADC_PREDIVIDER_64,
-    ADC_DIVIDER_8,
-                         0);
+   // MAP_ADC14_initModule(ADC_CLOCKSOURCE_ACLK, ADC_PREDIVIDER_64, ADC_DIVIDER_1,0);
+    MAP_ADC14_initModule(ADC_CLOCKSOURCE_ADCOSC, ADC_PREDIVIDER_64, ADC_DIVIDER_8,0);
 
     /* Configuring ADC Memory (ADC_MEM0 - ADC_MEM2 (A11, A13, A14)  with no repeat)
      * with internal 2.5v reference */

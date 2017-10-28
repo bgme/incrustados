@@ -5,18 +5,20 @@ Scheduler::Scheduler()
 {
     m_u8OpenSlots = static_cast<uint8_t>(NUMBER_OF_SLOTS);
     m_u8NextSlot = 0;
-    this->mail_box[0]=8192;
-    this->mail_box[1]=8192;
-    this->mail_box[2]=8192;
+//    this->mail_box[0] = 8192;
+//    this->mail_box[1] = 8192;
+//    this->mail_box[2] = 8192;
 
     for (int index = 0; index < NUMBER_OF_SLOTS; index++)
     {
         m_aSchedule[index].pToAttach = (uintptr_t) 0; // Init to an invalid pointer
+        run_flag[index] = false; // Init without run anything
     }
     return;
 }
 // - The attach function, inserts the task into the schedule slots.
-uint8_t Scheduler::attach(Task * i_ToAttach, uint64_t i_u64TickInterval, uint32_t ** o_u32MailBox)
+uint8_t Scheduler::attach(Task * i_ToAttach, uint64_t i_u64TickInterval,
+                          uint32_t ** o_u32MailBox, bool **run_flag)
 {
     uint8_t l_ErrorCode = NO_ERR;
     st_TaskInfo l_st_StructToAttach;
@@ -32,6 +34,7 @@ uint8_t Scheduler::attach(Task * i_ToAttach, uint64_t i_u64TickInterval, uint32_
         m_u8OpenSlots--;
         m_u8NextSlot++;
 
+        *run_flag = &this->run_flag[0];
         *o_u32MailBox = &this->mail_box[0];
     }
     else
@@ -53,16 +56,25 @@ uint8_t Scheduler::run(void)
                 static_cast<Task *>(m_aSchedule[l_iNextTaskSlot].pToAttach);
         if (l_pNextTask != ((uintptr_t) 0))
         {
-            if (m_aSchedule[l_iNextTaskSlot].u64TickInterval == 0)
+            if (m_aSchedule[l_iNextTaskSlot].u64TickIntervalInitValue != 0)
+            {
+                if (m_aSchedule[l_iNextTaskSlot].u64TickInterval == 0)
+                {
+                    l_pNextTask->run();
+                }
+                m_aSchedule[l_iNextTaskSlot].u64TickInterval++;
+
+                if (m_aSchedule[l_iNextTaskSlot].u64TickInterval
+                        > m_aSchedule[l_iNextTaskSlot].u64TickIntervalInitValue)
+                {
+                    m_aSchedule[l_iNextTaskSlot].u64TickInterval = 0;
+                }
+            }
+            else if (this->run_flag[m_aSchedule[l_iNextTaskSlot].pToAttach->m_u8TaskID])
             {
                 l_pNextTask->run();
-            }
-            m_aSchedule[l_iNextTaskSlot].u64TickInterval++;
-
-            if (m_aSchedule[l_iNextTaskSlot].u64TickInterval
-                    > m_aSchedule[l_iNextTaskSlot].u64TickIntervalInitValue)
-            {
-                m_aSchedule[l_iNextTaskSlot].u64TickInterval = 0;
+                this->run_flag[m_aSchedule[l_iNextTaskSlot].pToAttach->m_u8TaskID] =
+                        false; // Clear the event flag
             }
         }
         l_iNextTaskSlot++;

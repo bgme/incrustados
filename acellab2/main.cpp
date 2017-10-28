@@ -67,16 +67,16 @@ void main(void)
 {
 
     // - Instantiate two new Tasks
-    LED BlueLED(BIT2);
+    //LED BlueLED(BIT2);
     // LED GreenLED(BIT1);
     ADC Adc(BIT2);
     DRAW drawH(BIT2);
     // - Run the overall setup function for the system
     Setup();
     // - Attach the Tasks to the Scheduler;
-    g_MainScheduler.attach(&BlueLED, 500, &BlueLED.ptr_MailBox);
-    g_MainScheduler.attach(&Adc, 1, &Adc.ptr_MailBox);
-    g_MainScheduler.attach(&drawH, 1, &drawH.ptr_MailBox);
+    //g_MainScheduler.attach(&BlueLED, 500, &BlueLED.ptr_MailBox);
+    g_MainScheduler.attach(&Adc, 0, &Adc.ptr_MailBox, &Adc.run_flag);
+    g_MainScheduler.attach(&drawH, 0, &drawH.ptr_MailBox,&drawH.run_flag);
     //g_MainScheduler.attach(&GreenLED, 300);
     // - Run the Setup for the scheduler and all tasks
     g_MainScheduler.setup();
@@ -159,8 +159,8 @@ void ADC14_IRQHandler(void)
     /* ADC_MEM2 conversion completed */
     if (status & ADC_INT2)
     {
-        /* TODO*/
         /* Set a flag to active the ADC task */
+        g_MainScheduler.run_flag[0]=true;
     }
 
 
