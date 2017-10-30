@@ -19,6 +19,10 @@ public:
     virtual uint8_t run(void);
     virtual uint8_t setup(void);
     void drawHorizon(void);
+    void rectangle_sky(int);
+    void rectangle_earth(int, int);
+    void triangle_earth(int, int, uint16_t);
+    void triangle_sky(int, int, uint16_t);
 
     virtual uint8_t getMessage();
     virtual uint8_t putMessage();
@@ -29,11 +33,14 @@ public:
     /* Graphic library display */
     Graphics_Display g_sDisplay;
 
-    Graphics_Rectangle values_rectangle_heaven;
+    Graphics_Rectangle values_rectangle_sky;
     Graphics_Rectangle values_rectangle_earth;
 
     /* ADC results buffer */
     uint16_t resultsBuffer[3];
+
+    /* ID Function */
+    uint8_t ID_function;
 
 protected:
 private:

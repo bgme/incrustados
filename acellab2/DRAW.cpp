@@ -22,10 +22,9 @@ uint8_t DRAW::run()
 {
     uint8_t status = NO_ERR;
 
-    resultsBuffer[0] =  *(this->ptr_MailBox);
-    resultsBuffer[1] = *(this->ptr_MailBox+1);
-    resultsBuffer[2] = *(this->ptr_MailBox+2);
-
+    resultsBuffer[0] = *(this->ptr_MailBox);
+    resultsBuffer[1] = *(this->ptr_MailBox + 1);
+    resultsBuffer[2] = *(this->ptr_MailBox + 2);
     if (resultsBuffer[1] < 8192)
     {
         Crystalfontz128x128_SetOrientation(LCD_ORIENTATION_UP);
@@ -60,86 +59,26 @@ uint8_t DRAW::setup()
 void DRAW::drawHorizon(void)
 {
 
-    values_rectangle_heaven.xMin = 0;
-    values_rectangle_heaven.xMax = 127;
-    values_rectangle_heaven.yMin = 0;
-    values_rectangle_heaven.yMax = (128 * (resultsBuffer[2] - 11462))
-            / (4922 - 11462);
-    /*values_rectangle_heaven.yMax =
-     (resultsBuffer[0] < 8192) ?
-     (y0 * (resultsBuffer[0] - 8192)) / (8192 - 6557) + y0 :
-     (-1 * y0 * (resultsBuffer[0] - 8192)) / (9827 - 8192) + y0;
-     */
-    // Dibujo cielo azul
-    Graphics_fillRectangleOnDisplay(&g_sDisplay, &values_rectangle_heaven,
-                                    0x001F);
+    int y0 = (128 * (resultsBuffer[2] - 11462)) / (4922-11462);
 
-    values_rectangle_earth.xMin = 0;
-    values_rectangle_earth.xMax = 127;
-    values_rectangle_earth.yMin = values_rectangle_heaven.yMax;
-    values_rectangle_earth.yMax = 127;
+    int y1 =
+    (resultsBuffer[0] < 8192) ?
+    (y0 * (resultsBuffer[0] - 6557)) / (8192 - 6557) :
+    (-1 * y0 * (resultsBuffer[0] - 9827)) / (9827 - 8192);
 
-    // Dibujo tierra cafe
-    Graphics_fillRectangleOnDisplay(&g_sDisplay, &values_rectangle_earth,
-                                    0x8208);
-
-    ///*
-    //    // Extras
-    //    if (resultsBuffer[0] < 8192)
-    //    {
-    //        int y1 = (y0*(resultsBuffer[0]-8192))/(8192-6557)+y0;
-    //        int i;
-    //        for (i = 0; i < (y0-y1); i++)
-    //        {
-    //            //Extra 1.0
-    //            Graphics_drawHorizontalLineOnDisplay(
-    //                    &g_sDisplay,
-    //                    0,
-    //                    (128*(i+1) / (y0-y1)),
-    //                    (y1+i),
-    //                    0x804040);
-    //            //Extra 1.1
-    //            Graphics_drawHorizontalLineOnDisplay(
-    //                    &g_sDisplay,
-    //                    (128*(i+1) / (y0-y1))+1,
-    //                    127,
-    //                    (y1+i),
-    //                    0x0000FF);
-    //            // //Extra 2.0
-    //            Graphics_drawHorizontalLineOnDisplay(&g_sDisplay,
-    //                                                 63-(63)*(8192-resultsBuffer[0])/(8192-4922),
-    //                                                 63,
-    //                                                 63,
-    //                                                 0xFFFFFF);
-    //        }
-    //    }else{
-    //        int y2 = (-1*y0*(resultsBuffer[0]-8192))/(9827-8192)+y0;
-    //        int i;
-    //        for (i = 0; i < (y0-y2); i++)
-    //        {
-    //            //Extra 1.0
-    //            Graphics_drawHorizontalLineOnDisplay(
-    //                    &g_sDisplay,
-    //                    0,
-    //                    128-(128*(i+1)/(y0-y2)),
-    //                    (y2+i),
-    //                    0x0000FF);
-    //            //Extra 1.1
-    //            Graphics_drawHorizontalLineOnDisplay(
-    //                    &g_sDisplay,
-    //                    128-(128*(i+1)/(y0-y2))+1,
-    //                    127,
-    //                    (y2+i),
-    //                    0x804040);
-    //            //Extra 2.0
-    //            Graphics_drawHorizontalLineOnDisplay(&g_sDisplay,
-    //                                                      63,
-    //                                                      63+(127-63)*(resultsBuffer[0]-8192)/(11462-8192),
-    //                                                      63,
-    //                                                      0xFFFFFF);
-    //        }
-    //   }
-    //*/
+    if((ID_function & 0x3) == 0){
+    DRAW::rectangle_sky(y1);
+    ID_function += 1;
+    }else if((ID_function & 0x3) == 1){
+    DRAW::rectangle_earth(y0, y1);
+    ID_function += 1;
+    }else if((ID_function & 0x3) == 2){
+    DRAW::triangle_earth(y0, y1, resultsBuffer[0] );
+    ID_function += 1;
+    }else if((ID_function & 0x3) == 3){
+    DRAW::triangle_sky(y0, y1, resultsBuffer[0] );
+    ID_function += 1;
+    }
 }
 
 uint8_t DRAW::getMessage()
@@ -153,4 +92,87 @@ uint8_t DRAW::putMessage()
     uint8_t status = NO_ERR;
 
     return status;
+}
+
+void DRAW::rectangle_sky(int y1){
+
+    values_rectangle_sky.xMin = 0;
+    values_rectangle_sky.xMax = 127;
+    values_rectangle_sky.yMin = 0;
+    values_rectangle_sky.yMax = y1;
+
+    // Dibujo cielo azul
+    Graphics_fillRectangleOnDisplay(&g_sDisplay,
+                                    &values_rectangle_sky,
+                                    0x001F);
+
+}
+void DRAW::rectangle_earth(int y0, int y1){
+
+    values_rectangle_earth.xMin = 0;
+    values_rectangle_earth.xMax = 127;
+    values_rectangle_earth.yMin = 2 * y0 -y1 ;
+    values_rectangle_earth.yMax = 127;
+    // Dibujo tierra cafe
+    Graphics_fillRectangleOnDisplay(&g_sDisplay, &values_rectangle_earth,
+                                        0x8208);
+}
+
+
+void DRAW::triangle_earth(int y0, int y1, uint16_t result)
+{
+    if (result < 8192)
+    {
+        for (int i = 0; i < (2 * (y0 - y1)); i++)
+        {
+            //brown triangle
+            Graphics_drawHorizontalLineOnDisplay(
+                    &g_sDisplay, 0, (128 * (i + 1) / (2 * (y0 - y1))) - 4,
+                    (y1 + i), 0x804040);
+        }
+    }
+    else
+    {
+        for (int i = 0; i < (2 * (y0 - y1)); i++)
+        {
+            //brown triangle
+            Graphics_drawHorizontalLineOnDisplay(
+                    &g_sDisplay,
+                    128 - (128 * (i + 1) / (2 * (y0 - y1)) + 1) + 4, 127,
+                    (y1 + i), 0x804040);
+        }
+    }
+}
+
+void DRAW::triangle_sky(int y0, int y1, uint16_t result)
+{
+    if (resultsBuffer[0] < 8192)
+    {
+        for (int i = 0; i < (2 * (y0 - y1)); i++)
+        {
+            // White line between horizon
+            Graphics_drawHorizontalLineOnDisplay(
+                    &g_sDisplay, (128 * (i + 1) / (2 * (y0 - y1))) - 3,
+                    (128 * (i + 1) / (2 * (y0 - y1))), (y1 + i), 0xFFFFFF);
+            //blue triangle
+            Graphics_drawHorizontalLineOnDisplay(
+                    &g_sDisplay, (128 * (i + 1) / (2 * (y0 - y1)) + 1), 127,
+                    (y1 + i), 0x0000FF);
+        }
+    }
+    else
+    {
+        for (int i = 0; i < (2 * (y0 - y1)); i++)
+        {
+            //blue triangle
+            Graphics_drawHorizontalLineOnDisplay(
+                    &g_sDisplay, 0, 128 - (128 * (i + 1) / (2 * (y0 - y1))),
+                    (y1 + i), 0x0000FF);
+            // White line between horizon
+            Graphics_drawHorizontalLineOnDisplay(
+                    &g_sDisplay, 128 - (128 * (i + 1) / (2 * (y0 - y1)) + 1),
+                    128 - (128 * (i + 1) / (2 * (y0 - y1)) + 1) + 3, (y1 + i),
+                    0xFFFFFF);
+        }
+    }
 }
