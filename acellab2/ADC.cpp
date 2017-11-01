@@ -7,6 +7,7 @@
 
 #include <ADC.hpp>
 
+
 ADC::ADC(uint16_t i_BITN)
 {
 
@@ -23,9 +24,7 @@ uint8_t ADC::run()
 
     /* TODO: send a message to DRAW */
     /* Store ADC14 conversion results */
-    *(this->ptr_MailBox) = ADC14_getResult(ADC_MEM0);
-    *(this->ptr_MailBox+1)  = ADC14_getResult(ADC_MEM1);
-    *(this->ptr_MailBox+2)  = ADC14_getResult(ADC_MEM2);
+    ADC::putMessage(TASK1_ID);
 
     *(this->run_flag + 1) = true; // Activate the flag for running the next task
     return status;
@@ -43,8 +42,12 @@ uint8_t ADC::setup()
 
     /* Initializing ADC (ADCOSC/64/8) */
     MAP_ADC14_enableModule();
-   // MAP_ADC14_initModule(ADC_CLOCKSOURCE_ACLK, ADC_PREDIVIDER_64, ADC_DIVIDER_1,0);
-    MAP_ADC14_initModule(ADC_CLOCKSOURCE_ADCOSC, ADC_PREDIVIDER_64, ADC_DIVIDER_8,0);
+    MAP_ADC14_initModule(ADC_CLOCKSOURCE_ACLK, ADC_PREDIVIDER_1, ADC_DIVIDER_1,0);
+    //MAP_ADC14_initModule(ADC_CLOCKSOURCE_ADCOSC, ADC_PREDIVIDER_64, ADC_DIVIDER_8,0);
+
+    MAP_ADC14_setSampleHoldTime(ADC14_CTL0_SHT0__192, ADC14_CTL0_SHT1__192);
+
+    MAP_ADC14_setResolution(ADC_14BIT);
 
     /* Configuring ADC Memory (ADC_MEM0 - ADC_MEM2 (A11, A13, A14)  with no repeat)
      * with internal 2.5v reference */
@@ -89,9 +92,13 @@ uint8_t ADC::getMessage()
 
     return status;
 }
-uint8_t ADC::putMessage()
+uint8_t ADC::putMessage(uint8_t dst_task_id)
 {
     uint8_t status = NO_ERR;
+
+    *(this->ptr_MailBox + dst_task_id) = ADC14_getResult(ADC_MEM0);
+    *(this->ptr_MailBox + 256 + dst_task_id)  = ADC14_getResult(ADC_MEM1);
+    *(this->ptr_MailBox + 512 + dst_task_id)  = ADC14_getResult(ADC_MEM2);
 
     return status;
 }

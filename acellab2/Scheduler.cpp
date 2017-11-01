@@ -5,14 +5,16 @@ Scheduler::Scheduler()
 {
     m_u8OpenSlots = static_cast<uint8_t>(NUMBER_OF_SLOTS);
     m_u8NextSlot = 0;
-//    this->mail_box[0] = 8192;
-//    this->mail_box[1] = 8192;
-//    this->mail_box[2] = 8192;
 
     for (int index = 0; index < NUMBER_OF_SLOTS; index++)
     {
         m_aSchedule[index].pToAttach = (uintptr_t) 0; // Init to an invalid pointer
         run_flag[index] = false; // Init without run anything
+
+        for (int j = 0; j < MAIL_SIZE; j++)
+        {
+            mail_box[index][j] = 0U;
+        }
     }
     return;
 }
@@ -35,7 +37,7 @@ uint8_t Scheduler::attach(Task * i_ToAttach, uint64_t i_u64TickInterval,
         m_u8NextSlot++;
 
         *run_flag = &this->run_flag[0];
-        *o_u32MailBox = &this->mail_box[0];
+        *o_u32MailBox = &this->mail_box[0][0];
     }
     else
     {

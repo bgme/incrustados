@@ -32,7 +32,7 @@ public:
     uint8_t run(void);
     uint8_t setup(void);
 
-    uint32_t mail_box[MAIL_SIZE];
+    uint32_t mail_box[NUMBER_OF_SLOTS][MAIL_SIZE];
     bool run_flag[NUMBER_OF_SLOTS];
 private:
     uint8_t m_u8OpenSlots; // - Available slots

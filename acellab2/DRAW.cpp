@@ -22,9 +22,8 @@ uint8_t DRAW::run()
 {
     uint8_t status = NO_ERR;
 
-    resultsBuffer[0] = *(this->ptr_MailBox);
-    resultsBuffer[1] = *(this->ptr_MailBox + 1);
-    resultsBuffer[2] = *(this->ptr_MailBox + 2);
+    DRAW::getMessage();
+
     if (resultsBuffer[1] < 8192)
     {
         Crystalfontz128x128_SetOrientation(LCD_ORIENTATION_UP);
@@ -68,26 +67,27 @@ void DRAW::drawHorizon(void)
 
     if((ID_function & 0x3) == 0){
     DRAW::rectangle_sky(y1);
-    ID_function += 1;
     }else if((ID_function & 0x3) == 1){
     DRAW::rectangle_earth(y0, y1);
-    ID_function += 1;
     }else if((ID_function & 0x3) == 2){
     DRAW::triangle_earth(y0, y1, resultsBuffer[0] );
-    ID_function += 1;
     }else if((ID_function & 0x3) == 3){
     DRAW::triangle_sky(y0, y1, resultsBuffer[0] );
-    ID_function += 1;
     }
+    ID_function += 1;
 }
 
 uint8_t DRAW::getMessage()
 {
     uint8_t status = NO_ERR;
 
+    resultsBuffer[0] = *(this->ptr_MailBox + TASK1_ID);
+    resultsBuffer[1] = *(this->ptr_MailBox + 256 + TASK1_ID);
+    resultsBuffer[2] = *(this->ptr_MailBox + 512 + TASK1_ID);
+
     return status;
 }
-uint8_t DRAW::putMessage()
+uint8_t DRAW::putMessage(uint8_t dst_task_id)
 {
     uint8_t status = NO_ERR;
 

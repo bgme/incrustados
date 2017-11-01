@@ -7,6 +7,8 @@
 #define RET_ERR 1
 #define TASK_MAIL_SIZE       5
 
+#define TASK1_ID 1
+
 class Task
 {
 public:
@@ -42,7 +44,7 @@ public:
         return (0);
     }
     ;
-    virtual uint8_t putMessage()
+    virtual uint8_t putMessage(uint8_t dst_task_id)
     {
         return (0);
     }

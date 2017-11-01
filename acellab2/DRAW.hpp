@@ -25,7 +25,7 @@ public:
     void triangle_sky(int, int, uint16_t);
 
     virtual uint8_t getMessage();
-    virtual uint8_t putMessage();
+    virtual uint8_t putMessage(uint8_t dst_task_id);
 
     /* Graphic library context */
     Graphics_Context g_sContext;

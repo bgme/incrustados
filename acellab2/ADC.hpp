@@ -22,7 +22,7 @@ public:
     virtual uint8_t setup(void);
 
     virtual uint8_t getMessage();
-    virtual uint8_t putMessage();
+    virtual uint8_t putMessage(uint8_t dst_task_id);
 
 protected:
 
