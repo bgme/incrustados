@@ -9,8 +9,6 @@
 
 DRAW::DRAW(uint16_t i_BITN)
 {
-
-
 }
 
 DRAW::~DRAW()
@@ -115,7 +113,7 @@ void DRAW::rectangle_earth(int y0, int y1){
     values_rectangle_earth.yMax = 127;
     // Dibujo tierra cafe
     Graphics_fillRectangleOnDisplay(&g_sDisplay, &values_rectangle_earth,
-                                        0x8208);
+                                        0x0000);
 }
 
 
@@ -128,7 +126,7 @@ void DRAW::triangle_earth(int y0, int y1, uint16_t result)
             //brown triangle
             Graphics_drawHorizontalLineOnDisplay(
                     &g_sDisplay, 0, (128 * (i + 1) / (2 * (y0 - y1))) - 4,
-                    (y1 + i), 0x804040);
+                    (y1 + i), 0x000000);
         }
     }
     else
@@ -139,7 +137,7 @@ void DRAW::triangle_earth(int y0, int y1, uint16_t result)
             Graphics_drawHorizontalLineOnDisplay(
                     &g_sDisplay,
                     128 - (128 * (i + 1) / (2 * (y0 - y1)) + 1) + 4, 127,
-                    (y1 + i), 0x804040);
+                    (y1 + i), 0x000000);
         }
     }
 }
