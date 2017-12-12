@@ -48,6 +48,7 @@ bool first_time_bj = true;
 int snake_array[2048] = { [0 ... 2047] = 32 };
 uint8_t feed_position[2];
 int snake_size = 2;
+uint8_t debounce_flags = 0;
 
 enum DIRECTIONS {
     RIGHT,
@@ -357,11 +358,22 @@ void DRAW_SNAKE_PIXEL(uint8_t x, uint8_t y){
 void T32_INT1_INIT(void)
 {
     TIMER32_1->CONTROL = 0; /* turn off the timer, it would be used to reset the count */
-    TIMER32_1->LOAD = 25*48000 + (4-level)*(25*48000/2); /* ~0.5s ---> a 48Mhz */
+    TIMER32_1->LOAD = 25*48000 + (4-level)*(25*48000/2); /* ~0.5s ---> a 48 MHz */
     TIMER32_1->CONTROL = TIMER32_CONTROL_SIZE | TIMER32_CONTROL_PRESCALE_0
             | TIMER32_CONTROL_MODE | TIMER32_CONTROL_IE | TIMER32_CONTROL_ENABLE;
     NVIC_SetPriority(T32_INT1_IRQn, 1);
     NVIC_EnableIRQ(T32_INT1_IRQn);
+}
+
+/* timer for debounce */
+void T32_INT2_INIT(void)
+{
+    TIMER32_2->CONTROL = 0; /* turn off the timer, it would be used to reset the count */
+    TIMER32_2->LOAD = 1875*5; /* ~50ms ---> a 187.5 KHz */
+    TIMER32_2->CONTROL = TIMER32_CONTROL_SIZE | TIMER32_CONTROL_PRESCALE_2
+            | TIMER32_CONTROL_MODE | TIMER32_CONTROL_IE | TIMER32_CONTROL_ENABLE | TIMER32_CONTROL_ONESHOT;
+    NVIC_SetPriority(T32_INT2_IRQn, 1);
+    NVIC_EnableIRQ(T32_INT2_IRQn);
 }
 
 void T32_INT1_IRQHandler(void)
@@ -423,12 +435,21 @@ void T32_INT1_IRQHandler(void)
 void PORT3_IRQHandler(void)
 {
     __disable_irq();
-    DEBOUNCE_3();
+
+
     uint32_t status = 0;
     status = MAP_GPIO_getEnabledInterruptStatus(GPIO_PORT_P3);
     MAP_GPIO_clearInterruptFlag(GPIO_PORT_P3, status);
+
+    P3->IE = 0;
+    NVIC_DisableIRQ(PORT3_IRQn);
+    debounce_flags = BIT3;
+    T32_INT2_INIT(); /* wait 10ms */
+
     level -= 1;
     draw_display_initial_screen(level);
+
+
     __enable_irq();
     return;
 }
@@ -437,7 +458,15 @@ void PORT3_IRQHandler(void)
 void PORT4_IRQHandler(void)
 {
     __disable_irq();
-    DEBOUNCE_4();
+    uint32_t status = 0;
+    status = MAP_GPIO_getEnabledInterruptStatus(GPIO_PORT_P4);
+    MAP_GPIO_clearInterruptFlag(GPIO_PORT_P4, status);
+
+    P4->IE = 0;
+    NVIC_DisableIRQ(PORT4_IRQn);
+    debounce_flags = BIT4;
+        T32_INT2_INIT(); /* wait 10ms */
+
     if (first_time_bj){
         NVIC_DisableIRQ(PORT3_IRQn);
         NVIC_DisableIRQ(PORT5_IRQn);
@@ -454,9 +483,9 @@ void PORT4_IRQHandler(void)
         Graphics_clearDisplay(&g_sContext);
         draw_display_initial_screen(level);
     }
-    uint32_t status = 0;
-    status = MAP_GPIO_getEnabledInterruptStatus(GPIO_PORT_P4);
-    MAP_GPIO_clearInterruptFlag(GPIO_PORT_P4, status);
+
+
+
     __enable_irq();
     return;
 }
@@ -465,12 +494,20 @@ void PORT4_IRQHandler(void)
 void PORT5_IRQHandler(void)
 {
     __disable_irq();
-    DEBOUNCE_5();
     uint32_t status = 0;
     status = MAP_GPIO_getEnabledInterruptStatus(GPIO_PORT_P5);
     MAP_GPIO_clearInterruptFlag(GPIO_PORT_P5, status);
+
+    P5->IE = 0;
+    NVIC_DisableIRQ(PORT5_IRQn);
+    debounce_flags = BIT5;
+    T32_INT2_INIT(); /* wait 10ms */
+
     level += 1;
     draw_display_initial_screen(level);
+
+
+
     __enable_irq();
     return;
 }
@@ -508,4 +545,29 @@ void DEBOUNCE_5(void)
         }
     }
     while ((P5->IN & 0x02) == 0x00);
+}
+
+void T32_INT2_IRQHandler(void)
+{
+    __disable_irq();
+    TIMER32_2->INTCLR = 0U;
+    TIMER32_2->CONTROL = 0; /* Disable the timer for saving energy */
+    switch (debounce_flags){
+    case BIT3:
+        P3->IE |= BIT5; //Enable the interrupt flag
+        NVIC_EnableIRQ(PORT3_IRQn);
+        break;
+    case BIT4:
+        P4->IE |= BIT1; //Enable the interrupt flag
+        NVIC_EnableIRQ(PORT4_IRQn);
+        break;
+    case BIT5:
+        P5->IE |= BIT1; //Enable the interrupt flag
+        NVIC_EnableIRQ(PORT5_IRQn);
+        break;
+    }
+
+    debounce_flags = 0;
+    __enable_irq();
+    return;
 }
