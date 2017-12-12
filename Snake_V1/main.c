@@ -49,6 +49,12 @@ int snake_array[2048] = { [0 ... 2047] = 32 };
 uint8_t feed_position[2];
 int snake_size = 2;
 uint8_t debounce_flags = 0;
+uint16_t feed_expiration_counter = 0;
+uint8_t debounce_p1_counter = 0;
+
+bool bounce_p1 = false;
+bool bounce_p3 = false;
+bool bounce_p5 = false;
 
 enum DIRECTIONS {
     RIGHT,
@@ -223,16 +229,17 @@ void BUTTONS_CONFIG()
      NVIC_SetPriority(PORT3_IRQn, 1);
      NVIC_EnableIRQ(PORT3_IRQn);
 
-     /* Configuring P4.1 (switch) as an input and enabling interrupts */
+     /* Configuring P1.4 (switch) as an input and enabling interrupts */
      // P4.1 as input pin default. P4DIR-> XXXX XX0X
-     P4->REN |= BIT1; // P4.1 PullUp-PullDown resistor
-     P4->OUT |= BIT1; //Input with pullup resistor
-     P4->IFG &= 0xFD; //Clear the interrupt flag
-     P4->IE |= BIT1; //Enable the interrupt flag
-     P4->IES |= BIT1; //Interrupt high to low transition
-     //Set Port4 interrupt
-     NVIC_SetPriority(PORT4_IRQn, 1);
-     NVIC_EnableIRQ(PORT4_IRQn);
+     P1->REN |= BIT4; // P1.4 PullUp-PullDown resistor
+     P1->OUT |= BIT4; //Input with pullup resistor
+     P1->IFG &= 0xEF; //Clear the interrupt flag
+     P1->IE |= BIT4; //Enable the interrupt flag
+     P1->IES |= BIT4; //Interrupt high to low transition
+     //Set Port1 interrupt
+     NVIC_SetPriority(PORT1_IRQn, 1);
+     NVIC_EnableIRQ(PORT1_IRQn);
+
 }
 
 void RECALCULATE_DIRECTION(void)
@@ -357,6 +364,7 @@ void DRAW_SNAKE_PIXEL(uint8_t x, uint8_t y){
 
 void T32_INT1_INIT(void)
 {
+    level = level % 5;
     TIMER32_1->CONTROL = 0; /* turn off the timer, it would be used to reset the count */
     TIMER32_1->LOAD = 25*48000 + (4-level)*(25*48000/2); /* ~0.5s ---> a 48 MHz */
     TIMER32_1->CONTROL = TIMER32_CONTROL_SIZE | TIMER32_CONTROL_PRESCALE_0
@@ -369,9 +377,9 @@ void T32_INT1_INIT(void)
 void T32_INT2_INIT(void)
 {
     TIMER32_2->CONTROL = 0; /* turn off the timer, it would be used to reset the count */
-    TIMER32_2->LOAD = 1875*5; /* ~50ms ---> a 187.5 KHz */
+    TIMER32_2->LOAD = 1875*10; /* ~100ms ---> a 187.5 KHz */
     TIMER32_2->CONTROL = TIMER32_CONTROL_SIZE | TIMER32_CONTROL_PRESCALE_2
-            | TIMER32_CONTROL_MODE | TIMER32_CONTROL_IE | TIMER32_CONTROL_ENABLE | TIMER32_CONTROL_ONESHOT;
+            | TIMER32_CONTROL_MODE | TIMER32_CONTROL_IE | TIMER32_CONTROL_ENABLE;
     NVIC_SetPriority(T32_INT2_IRQn, 1);
     NVIC_EnableIRQ(T32_INT2_IRQn);
 }
@@ -408,7 +416,7 @@ void T32_INT1_IRQHandler(void)
     }
     if( (feed_position[0] == snake_array[0]) && (feed_position[1] == snake_array[1]) ){
         snake_size++;
-
+        feed_expiration_counter = 0; /* restart the count for feed expiration */
         // Update global variables to screen initial
         score = snake_size-2;
         if (score > max_score) max_score = score;
@@ -425,7 +433,7 @@ void T32_INT1_IRQHandler(void)
 
 
     if (GAME_OVER())
-        PORT4_IRQHandler();
+        PORT1_IRQHandler();
 
     __enable_irq();
     return;
@@ -441,30 +449,35 @@ void PORT3_IRQHandler(void)
     status = MAP_GPIO_getEnabledInterruptStatus(GPIO_PORT_P3);
     MAP_GPIO_clearInterruptFlag(GPIO_PORT_P3, status);
 
-    P3->IE = 0;
-    NVIC_DisableIRQ(PORT3_IRQn);
+    if(!bounce_p3){
+    bounce_p3 = true;
     debounce_flags = BIT3;
     T32_INT2_INIT(); /* wait 10ms */
+    if(level==0){
+        level = 4;
+    }else{
+    level --;
+    }
 
-    level -= 1;
     draw_display_initial_screen(level);
 
+    }
 
     __enable_irq();
     return;
 }
 
 /* GPIO ISR, joystick */
-void PORT4_IRQHandler(void)
+void PORT1_IRQHandler(void)
 {
     __disable_irq();
     uint32_t status = 0;
-    status = MAP_GPIO_getEnabledInterruptStatus(GPIO_PORT_P4);
-    MAP_GPIO_clearInterruptFlag(GPIO_PORT_P4, status);
+    status = MAP_GPIO_getEnabledInterruptStatus(GPIO_PORT_P1);
+    MAP_GPIO_clearInterruptFlag(GPIO_PORT_P1, status);
 
-    P4->IE = 0;
-    NVIC_DisableIRQ(PORT4_IRQn);
-    debounce_flags = BIT4;
+    if(!bounce_p1){
+        bounce_p1 = true;
+    debounce_flags = BIT1;
         T32_INT2_INIT(); /* wait 10ms */
 
     if (first_time_bj){
@@ -483,7 +496,7 @@ void PORT4_IRQHandler(void)
         Graphics_clearDisplay(&g_sContext);
         draw_display_initial_screen(level);
     }
-
+    }
 
 
     __enable_irq();
@@ -498,15 +511,16 @@ void PORT5_IRQHandler(void)
     status = MAP_GPIO_getEnabledInterruptStatus(GPIO_PORT_P5);
     MAP_GPIO_clearInterruptFlag(GPIO_PORT_P5, status);
 
-    P5->IE = 0;
-    NVIC_DisableIRQ(PORT5_IRQn);
+    if(!bounce_p5){
+        bounce_p5 = true;
     debounce_flags = BIT5;
     T32_INT2_INIT(); /* wait 10ms */
 
-    level += 1;
+    level ++;
+    level = level % 5;
     draw_display_initial_screen(level);
 
-
+    }
 
     __enable_irq();
     return;
@@ -551,23 +565,38 @@ void T32_INT2_IRQHandler(void)
 {
     __disable_irq();
     TIMER32_2->INTCLR = 0U;
-    TIMER32_2->CONTROL = 0; /* Disable the timer for saving energy */
     switch (debounce_flags){
     case BIT3:
-        P3->IE |= BIT5; //Enable the interrupt flag
-        NVIC_EnableIRQ(PORT3_IRQn);
+        bounce_p3 = false;
+        debounce_flags = 0;
         break;
-    case BIT4:
-        P4->IE |= BIT1; //Enable the interrupt flag
-        NVIC_EnableIRQ(PORT4_IRQn);
+    case BIT1:
+
+        if(debounce_p1_counter >= 2){
+        bounce_p1 = false;
+        debounce_p1_counter=0;
+        debounce_flags = 0;
+        }else{
+            debounce_p1_counter++;
+        }
+
         break;
     case BIT5:
-        P5->IE |= BIT1; //Enable the interrupt flag
-        NVIC_EnableIRQ(PORT5_IRQn);
+        bounce_p5 = false;
+        debounce_flags = 0;
         break;
     }
+ if(!first_time_bj){
+    feed_expiration_counter ++;
+    if(feed_expiration_counter >= 200/(level+1)){
+        feed_expiration_counter = 0;
+        DRAW_ERASE_TAIL(feed_position[0],feed_position[1]);
+        GENERATE_FEED();
+        DRAW_FEED_PIXEL(feed_position[0], feed_position[1]);
+    }}
 
-    debounce_flags = 0;
+
+
     __enable_irq();
     return;
 }
