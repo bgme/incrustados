@@ -76,6 +76,8 @@ int main(void)
     /* Initializes Clock System */
     MAP_CS_setDCOCenteredFrequency(CS_DCO_FREQUENCY_48);
 
+//    CS_initClockSignal(CS_ACLK, CS_VLOCLK_SELECT, CS_CLOCK_DIVIDER_64); ////////////////////////////////////////////////////
+
     /* Initializes display */
     Crystalfontz128x128_Init();
 
@@ -95,7 +97,8 @@ int main(void)
 
     /* Initializing ADC (ADCOSC/64/8) */
     MAP_ADC14_enableModule();
-    MAP_ADC14_initModule(ADC_CLOCKSOURCE_ADCOSC, ADC_PREDIVIDER_64, ADC_DIVIDER_8, 0);
+//    MAP_ADC14_initModule(ADC_CLOCKSOURCE_ADCOSC, ADC_PREDIVIDER_64, ADC_DIVIDER_8, 0);
+    MAP_ADC14_initModule(ADC_CLOCKSOURCE_ACLK, ADC_PREDIVIDER_32, ADC_DIVIDER_1, 0);
 
     /* Configuring ADC Memory (ADC_MEM0 - ADC_MEM1 (A15, A9)  with repeat)
          * with internal 2.5v reference */
@@ -453,6 +456,7 @@ void PORT3_IRQHandler(void)
     bounce_p3 = true;
     debounce_flags = BIT3;
     T32_INT2_INIT(); /* wait 10ms */
+    NVIC_DisableIRQ(PORT5_IRQn);
     if(level==0){
         level = 4;
     }else{
@@ -476,21 +480,27 @@ void PORT1_IRQHandler(void)
     MAP_GPIO_clearInterruptFlag(GPIO_PORT_P1, status);
 
     if(!bounce_p1){
-        bounce_p1 = true;
+    bounce_p1 = true;
     debounce_flags = BIT1;
-        T32_INT2_INIT(); /* wait 10ms */
+    T32_INT2_INIT(); /* wait 10ms */
 
     if (first_time_bj){
-        NVIC_DisableIRQ(PORT3_IRQn);
-        NVIC_DisableIRQ(PORT5_IRQn);
+        bounce_p3 = true;
+        bounce_p5 = true;
+
+//        NVIC_DisableIRQ(PORT3_IRQn);
+//        NVIC_DisableIRQ(PORT5_IRQn);
         first_time_bj = false;
         T32_INT1_INIT();
         GAME_INIT();
     }else{
         TIMER32_1->CONTROL = 0; /* turn off the timer, it would be used to reset the count */
         TIMER32_1->INTCLR = 0U;
-        NVIC_EnableIRQ(PORT3_IRQn);
-        NVIC_EnableIRQ(PORT5_IRQn);
+        bounce_p3 = false;
+        bounce_p5 = false;
+
+//        NVIC_EnableIRQ(PORT3_IRQn);
+//        NVIC_EnableIRQ(PORT5_IRQn);
         first_time_bj = true;
         level = 0;
         Graphics_clearDisplay(&g_sContext);
@@ -515,7 +525,7 @@ void PORT5_IRQHandler(void)
         bounce_p5 = true;
     debounce_flags = BIT5;
     T32_INT2_INIT(); /* wait 10ms */
-
+        NVIC_DisableIRQ(PORT3_IRQn);
     level ++;
     level = level % 5;
     draw_display_initial_screen(level);
@@ -569,6 +579,7 @@ void T32_INT2_IRQHandler(void)
     case BIT3:
         bounce_p3 = false;
         debounce_flags = 0;
+        NVIC_EnableIRQ(PORT5_IRQn);
         break;
     case BIT1:
 
@@ -584,6 +595,7 @@ void T32_INT2_IRQHandler(void)
     case BIT5:
         bounce_p5 = false;
         debounce_flags = 0;
+        NVIC_EnableIRQ(PORT3_IRQn);
         break;
     }
  if(!first_time_bj){
